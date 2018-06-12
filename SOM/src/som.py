@@ -21,12 +21,12 @@ X = sc.fit_transform(X)
 from minisom import MiniSom
 som = MiniSom(x = 15, y = 15, input_len = 7, sigma = 1.0, learning_rate = 0.5)
 som.random_weights_init(data = X)
-som.train_random(data = X, num_iteration = 400)
+som.train_random(data = X, num_iteration = 1)
 
 # Visualizing the result
 from pylab import bone, plot, show, pcolor, colorbar
 bone()
-pcolor(som.distance_map())
+pcolor(som.distance_map().T)
 colorbar()
 for i, x in enumerate(X):
   w = som.winner(x)
@@ -43,5 +43,6 @@ for i, x in enumerate(X):
 print('Number of type 0:', len(np.where(y == 0)[0]))
 print('Number of type 1:', len(np.where(y == 1)[0]))
 print('Number of type 2:', len(np.where(y == 2)[0]))
+print(som._weights.shape)
 show()
 # plt.savefig('/Users/kienmaingoc/Desktop/som_test.png')
