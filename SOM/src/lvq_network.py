@@ -54,6 +54,14 @@ class LvqNetwork(object):
         for j in range (i * n_subclass_per_class, n_subclass):
           self._linear_layer_weights[i][j] = 1
 
+  def random_weights_init(self, data):
+    """Initializes the weights of the competitive layer, picking random samples from data"""
+    for i in range (self._n_subclass):
+      rand_idx = random.random_integers(0, len(data) - 1)
+      self._competitive_layer_weights[i] = data[rand_idx]
+      norm = fast_norm(self._competitive_layer_weights[i])
+      self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
+
   def winner(self, x):
     """Determines the winner neuron in competitive layer"""
     n = array([])
