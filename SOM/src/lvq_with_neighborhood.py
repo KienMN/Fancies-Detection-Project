@@ -25,6 +25,7 @@ X_test = sc.transform(X_test)
 # Training the LVQ
 from lvq_network import LvqNetworkWithNeighborhood
 lvq = LvqNetworkWithNeighborhood(n_feature = 7, n_rows = 9, n_cols = 9, n_class = 3, learning_rate = 0.5, decay_rate = 1, radius = 2)
+lvq.random_weights_init(X_train)
 lvq.train_batch(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
 
 # Predict the result
