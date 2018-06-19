@@ -9,7 +9,7 @@ import os
 # Importing the dataset
 filepath = os.path.dirname(os.getcwd()) + '/data/processed_SVNE-2P_SVNE-2P-new.csv'
 dataset = pd.read_csv(filepath)
-X = dataset.iloc[:, :-1].values
+X = dataset.iloc[:, : -1].values
 y = dataset.iloc[:, -1].values.astype(np.int8)
 
 # Spliting the dataset into the Training set and the Test set

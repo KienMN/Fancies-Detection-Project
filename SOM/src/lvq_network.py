@@ -1,6 +1,6 @@
 from math import sqrt
 import numpy as np
-from numpy import array, argmax, zeros, random, append, dot
+from numpy import array, argmax, zeros, random, append, dot, copy
 
 def fast_norm(x):
   """
@@ -161,6 +161,7 @@ class LvqNetwork(object):
     return y_pred
 
   def details(self):
+    """Prints parameters of lvq"""
     print(self._competitive_layer_weights)
     print(self._linear_layer_weights)
     print(self._biases)
@@ -169,12 +170,60 @@ class LvqNetwork(object):
 class LvqNetworkWithNeighborhood(LvqNetwork):
   def __init__(self, n_feature, n_rows, n_cols, n_class,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              radius = 0):
+              bias_function = None,
+              radius = 0, radius_decay_function = None, radius_decay_rate = 1):
+    
+    """
+    Initializing a Learning Vector Quantization with Neighborhood concept
+
+    Parameters:
+    
+    n_feature: int
+      Number of features of the dataset
+
+    n_rows: int
+      Number of rows in the competitive layer
+
+    n_cols: int
+      Number of columns in the competitive layer
+
+    n_class: int
+      Number of classes of the dataset
+
+    learning_rate: float, default = 0.5
+      Learning rate of the algorithm
+
+    learning_rate_decay_function: function, default = None
+      Function that decreases learning rate after number of iterations
+    
+    decay_rate: float, default = 1
+      Reduction rate of learning rate after number of iterations
+    
+    bias_function: function, default = None
+      Function that updates biases value of neurons in the competitive layer
+
+    radius: float
+      Radius of neighborhood around winner neuron in the competitive layer
+
+    radius_decay_function:
+      Function that decreases radius after number of iterations
+
+    radius_decay_rate: float, default = 1
+      Reduction rate of radius after number of iterations
+    """
+
     super().__init__(n_feature = n_feature, n_subclass = n_rows * n_cols, n_class = n_class,
-                    learning_rate = learning_rate, decay_rate = decay_rate)
+                    learning_rate = learning_rate, learning_rate_decay_function = learning_rate_decay_function,
+                    decay_rate = decay_rate,
+                    bias_function = bias_function)
     self._n_rows_subclass = n_rows
     self._n_cols_subclass = n_cols
     self._radius = radius
+    self._radius_decay_rate = radius_decay_rate
+    if radius_decay_function:
+      self._radius_decay_function = radius_decay_function
+    else:
+      self._radius_decay_function = lambda radius, iteration, decay_rate: radius / (1 + decay_rate * iteration)
   
   def neighborhood(self, win_idx, radius):
     """Computes correlation between each neurons and winner neuron"""
@@ -190,18 +239,20 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
 
   def is_class(self, y):
     """Determines whether neurons in competitive layer belong to class y or not"""
-    res = self._linear_layer_weights[y]
+    res = copy(self._linear_layer_weights[y])
     for i in range (self._n_subclass):
       if res[i] == 0:
         res[i] = -1
     return res
 
   def update(self, x, y, epoch):
-    """Updates the weights of competitive layer"""
+    """Updates the weights of competitive layer and biasees value"""
     win = self.winner(x)
     win_idx = argmax(win)
+    self._biases = self._bias_function(self._biases, win_idx)
+    self._winner_count[win_idx] += 1
     alpha = self._learning_rate_decay_function(self._learning_rate, epoch, self._decay_rate)
-    radius = self._learning_rate_decay_function(self._radius, epoch, self._decay_rate)
+    radius = self._radius_decay_function(self._radius, epoch, self._radius_decay_rate)
     correlation = self.neighborhood(win_idx, radius)
     is_class = self.is_class(y)
     for i in range(self._n_subclass):

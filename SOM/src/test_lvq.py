@@ -26,5 +26,5 @@ X_test = sc.transform(X_test)
 from lvq_network import LvqNetwork, LvqNetworkWithNeighborhood
 lvq = LvqNetwork(n_feature = 7, n_subclass = 90, n_class = 3, learning_rate = 0.5, decay_rate = 1)
 lvq.random_weights_init(X_train)
-lvq.train_batch(X_train, y_train, num_iteration = 100, epoch_size = len(X_train))
+lvq.train_batch(X_train, y_train, num_iteration = 4, epoch_size = len(X_train))
 lvq.details()
