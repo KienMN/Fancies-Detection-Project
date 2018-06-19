@@ -1,6 +1,7 @@
 from math import sqrt
 import numpy as np
-from numpy import array, argmax, zeros, random, append, dot, copy
+from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin
+from sklearn.decomposition import PCA
 
 def fast_norm(x):
   """
@@ -244,6 +245,30 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
       if res[i] == 0:
         res[i] = -1
     return res
+
+  def pca_weights_init(self, data):
+    """Initializes the weights of the competitive layers using Principal Component Analysis technique"""
+    coord = zeros((self._n_subclass, 2))
+    for i in range (self._n_subclass):
+      coord[i][0] = i // self._n_cols_subclass
+      coord[i][1] = i % self._n_cols_subclass
+    mx = amax(coord, axis = 0)
+    mn = amin(coord, axis = 0)
+
+    coord = (coord - mn) / (mx - mn)
+    coord = (coord - 0.5) * 2
+
+    pca = PCA(n_components = 2)
+    pca.fit(data)
+    eigvec = pca.components_
+    for i in range (self._n_subclass):
+      if coord[i][0] != 0 or coord[i][1] != 0:
+        self._competitive_layer_weights[i] = coord[i][0] * eigvec[0] + coord[i][1] * eigvec[1]
+      else:
+        self._competitive_layer_weights[i] = 0 * eigvec[0] + 0.01 * eigvec[1]
+      # Normalizing the weights
+      norm = fast_norm(self._competitive_layer_weights[i])
+      self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
 
   def update(self, x, y, epoch):
     """Updates the weights of competitive layer and biasees value"""
