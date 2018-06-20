@@ -1,4 +1,4 @@
-from math import sqrt
+from math import sqrt, exp
 import numpy as np
 from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin
 from sklearn.decomposition import PCA
@@ -172,7 +172,8 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
   def __init__(self, n_feature, n_rows, n_cols, n_class,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
               bias_function = None,
-              radius = 0, radius_decay_function = None, radius_decay_rate = 1):
+              radius = 0, radius_decay_function = None, radius_decay_rate = 1,
+              neighborhood = None):
     
     """
     Initializing a Learning Vector Quantization with Neighborhood concept
@@ -211,6 +212,9 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
 
     radius_decay_rate: float, default = 1
       Reduction rate of radius after number of iterations
+
+    neighborhood: option ["bubble", "gaussian"], default = None
+      Function that determines coefficient for neighbors of winner neuron in competitive layer
     """
 
     super().__init__(n_feature = n_feature, n_subclass = n_rows * n_cols, n_class = n_class,
@@ -221,6 +225,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     self._n_cols_subclass = n_cols
     self._radius = radius
     self._radius_decay_rate = radius_decay_rate
+    self._neighborhood_function = neighborhood
     if radius_decay_function:
       self._radius_decay_function = radius_decay_function
     else:
@@ -229,13 +234,25 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
   def neighborhood(self, win_idx, radius):
     """Computes correlation between each neurons and winner neuron"""
     correlation = zeros(self._n_subclass)
+    correlation[win_idx] = 1
     win_i = win_idx // self._n_cols_subclass
     win_j = win_idx % self._n_cols_subclass
-    for idx in range (self._n_subclass):
-      i = idx // self._n_cols_subclass
-      j = idx % self._n_cols_subclass
-      if (win_i - i) ** 2 + (win_j - j) ** 2 <= radius ** 2:
-        correlation[idx] = 1
+
+    if self._neighborhood_function == "gaussian":
+      for idx in range (self._n_subclass):
+        i = idx // self._n_cols_subclass
+        j = idx % self._n_cols_subclass
+        distance = (win_i - i) ** 2 + (win_j - j) ** 2
+        correlation[idx] = exp(-distance / (2 * (radius ** 2)))
+    elif self._neighborhood_function == "bubble":
+      for idx in range (self._n_subclass):
+        i = idx // self._n_cols_subclass
+        j = idx % self._n_cols_subclass
+        if (win_i - i) ** 2 + (win_j - j) ** 2 <= radius ** 2:
+          correlation[idx] = 1
+    else:
+      pass
+
     return correlation
 
   def is_class(self, y):
@@ -261,6 +278,8 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     pca = PCA(n_components = 2)
     pca.fit(data)
     eigvec = pca.components_
+    # eigval = pca.explained_variance_
+    # print(eigval)
     for i in range (self._n_subclass):
       if coord[i][0] != 0 or coord[i][1] != 0:
         self._competitive_layer_weights[i] = coord[i][0] * eigvec[0] + coord[i][1] * eigvec[1]
@@ -281,6 +300,6 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     correlation = self.neighborhood(win_idx, radius)
     is_class = self.is_class(y)
     for i in range(self._n_subclass):
-      self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + correlation[i] * is_class[i] * alpha * (x - self._competitive_layer_weights[i])
+      self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * alpha * correlation[i] * (x - self._competitive_layer_weights[i])
       norm = fast_norm(self._competitive_layer_weights[i])
       self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
