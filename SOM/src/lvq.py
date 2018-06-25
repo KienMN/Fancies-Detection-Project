@@ -23,9 +23,9 @@ X_train = sc.fit_transform(X_train)
 X_test = sc.transform(X_test)
 
 # Training the LVQ
-from lvq_network import LvqNetwork
-lvq = LvqNetwork(n_feature = 7, n_subclass = 90, n_class = 3, learning_rate = 0.5, decay_rate = 1)
-lvq.random_weights_init(X_train)
+from lvq_network import LvqNetwork, fast_norm
+lvq = LvqNetwork(n_feature = 7, n_subclass = 90, n_class = 3, learning_rate = 0.5, decay_rate = 1, weights_normalization="length")
+lvq.sample_weights_init(X_train)
 lvq.train_batch(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
 
 # Predict the result
@@ -38,3 +38,4 @@ cm = confusion_matrix(y_test, y_pred)
 # Printing the confusion matrix
 print(cm)
 print((cm[0][0] + cm[1][1] + cm[2][2]) / np.sum(cm))
+print(fast_norm(lvq._competitive_layer_weights[0]))
