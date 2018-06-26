@@ -17,10 +17,10 @@ from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
 
 # Feature scaling
-from sklearn.preprocessing import MinMaxScaler
-sc = MinMaxScaler(feature_range = (-1, 1))
-X_train = sc.fit_transform(X_train)
-X_test = sc.transform(X_test)
+# from sklearn.preprocessing import MinMaxScaler
+# sc = MinMaxScaler(feature_range = (-1, 1))
+# X_train = sc.fit_transform(X_train)
+# X_test = sc.transform(X_test)
 
 # Training the LVQ
 # from lvq_network import LvqNetwork, LvqNetworkWithNeighborhood
@@ -30,15 +30,15 @@ X_test = sc.transform(X_test)
 # lvq.details()
 
 from lvq_network import LvqNetworkWithNeighborhood
-lvq = LvqNetworkWithNeighborhood(n_feature = 6, n_rows = 30, n_cols = 1, n_class = 3,
-                                learning_rate = 0.5, decay_rate = 1,
+lvq = LvqNetworkWithNeighborhood(n_feature = 6, n_rows = 1, n_cols = 1, n_class = 3,
+                                learning_rate = 0.5, decay_rate = 2,
                                 sigma = 2, sigma_decay_rate = 1,
                                 neighborhood = "bubble")
 
 # lvq.sample_weights_init(X_train)
 lvq.pca_weights_init(X_train)
-lvq.train_batch(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
-lvq.details()
+lvq.train_batch(X_train, y_train, num_iteration = 6000, epoch_size = len(X_train))
+# lvq.details()
 
 # Predicting the result
 y_pred = lvq.predict(X_test)

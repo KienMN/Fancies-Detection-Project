@@ -67,6 +67,8 @@ class LvqNetwork(object):
     weights_normalization: option ["length"], default = None
       Normalizing weights of neuron
     """
+    if n_subclass < n_class:
+      raise Exception("The number of subclasses must be more than or equal to the number of classes")
 
     self._n_feature = n_feature
     self._n_subclass = n_subclass
@@ -116,7 +118,9 @@ class LvqNetwork(object):
 
   def sample_weights_init(self, data):
     """Initializes the weights of the competitive layer, picking random samples from data"""
-    if data.shape[1] != self._n_feature:
+    if len(data.shape) != 2:
+      raise Exception("Data is expected to be 2D array")
+    elif data.shape[1] != self._n_feature:
       raise Exception("Data must have the same number of features as the number of features of the model")
     for i in range (self._n_subclass):
       # Initializing the weights, picking random sample from data
@@ -158,7 +162,9 @@ class LvqNetwork(object):
 
   def train_batch(self, X, y, num_iteration, epoch_size):
     """Trains using all the vectors in data sequentially"""
-    if X.shape[1] != self._n_feature:
+    if len(X.shape) <= 1:
+      raise Exception("Data is expected to be 2D array")
+    elif X.shape[1] != self._n_feature:
       raise Exception("Data must have the same number of features as the number of features of the model")
     iteration = 0
     while iteration < num_iteration:
@@ -178,9 +184,13 @@ class LvqNetwork(object):
 
   def details(self):
     """Prints parameters of lvq"""
+    print("Competitive layer weights")
     print(self._competitive_layer_weights)
+    print("Linear layer weights")
     print(self._linear_layer_weights)
+    print("Biases")
     print(self._biases)
+    print("Winner neurons count")
     print(self._winner_count)
 
 class LvqNetworkWithNeighborhood(LvqNetwork):
@@ -222,14 +232,14 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     weights_normalization: option ["length"], default = None
       Normalizing weights of neuron
 
-    radius: float
+    sigma: float
       Radius of neighborhood around winner neuron in the competitive layer
 
-    radius_decay_function:
-      Function that decreases radius after number of iterations
+    sigma_decay_function:
+      Function that decreases sigma after number of iterations
 
-    radius_decay_rate: float, default = 1
-      Reduction rate of radius after number of iterations
+    sigma_decay_rate: float, default = 1
+      Reduction rate of sigma after number of iterations
 
     neighborhood: option ["bubble", "gaussian"], default = None
       Function that determines coefficient for neighbors of winner neuron in competitive layer
@@ -282,16 +292,24 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
 
   def pca_weights_init(self, data):
     """Initializes the weights of the competitive layers using Principal Component Analysis technique"""
-    if data.shape[1] <= 1:
-      raise Exception("Number of dimensions of data must be at least 2")
+    if len(data.shape) != 2:
+      raise Exception("Data is expected to be 2D array")
+    elif data.shape[1] != self._n_feature:
+      raise Exception("Data must have the same number of features as the number of features of the model")
+
     self._competitive_layer_weights = zeros((self._n_subclass, self._n_feature))
     pca_number_of_components = None
     coord = None
-    if self._n_cols_subclass == 1 or self._n_rows_subclass == 1:
+    if self._n_cols_subclass == 1 or self._n_rows_subclass == 1 or data.shape[1] == 1:
       pca_number_of_components = 1
-      coord = zeros((self._n_subclass, 1))
-      for i in range (self._n_subclass):
-        coord[i][0] = i
+      if self._n_cols_subclass == self._n_rows_subclass:
+        coord = array([[1], [0]])
+        print(coord)
+        print(coord[0][0])
+      else:  
+        coord = zeros((self._n_subclass, 1))
+        for i in range (self._n_subclass):
+          coord[i][0] = i
     else:
       pca_number_of_components = 2
       coord = zeros((self._n_subclass, 2))
@@ -308,7 +326,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     print(eigvec)
     for i in range (self._n_subclass):
       for j in range (eigvec.shape[0]):
-        self._competitive_layer_weights[i] += coord[i][j] * eigvec[j]
+        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + coord[i][j] * eigvec[j]
       if fast_norm(self._competitive_layer_weights[i]) == 0:
         self._competitive_layer_weights[i] = 0.01 * eigvec[0]
       # Normalizing the weights
