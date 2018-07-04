@@ -34,6 +34,12 @@ def default_bias_function(biasses, win_idx):
   biasses[win_idx] = biasses[win_idx] / 0.9 - 0.2
   return biasses
 
+def default_learning_rate_decay_function(learning_rate, iteration, decay_rate):
+  return learning_rate / (1 + decay_rate * iteration)
+
+def default_radius_decay_function(sigma, iteration, decay_rate):
+  return sigma / (1 + decay_rate * iteration)
+
 class LvqNetwork(object):
   def __init__(self, n_feature, n_subclass, n_class,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
@@ -79,7 +85,7 @@ class LvqNetwork(object):
     if learning_rate_decay_function:
       self._learning_rate_decay_function = learning_rate_decay_function
     else:
-      self._learning_rate_decay_function = lambda learning_rate, iteration, decay_rate: learning_rate / (1 + decay_rate * iteration)
+      self._learning_rate_decay_function = default_learning_rate_decay_function
     
     if bias_function:
       self._bias_function = bias_function
@@ -257,7 +263,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     if sigma_decay_function:
       self._radius_decay_function = sigma_decay_function
     else:
-      self._radius_decay_function = lambda sigma, iteration, decay_rate: sigma / (1 + decay_rate * iteration)
+      self._radius_decay_function = default_radius_decay_function
   
   def neighborhood(self, win_idx, radius):
     """Computes correlation between each neurons and winner neuron"""
