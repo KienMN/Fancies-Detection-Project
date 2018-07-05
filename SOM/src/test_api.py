@@ -8,7 +8,7 @@ import os
 headers = {"content-type": "application/json"}
 
 payload = {}
-payload['model_id'] = "model-1"
+payload['model_id'] = "model-2"
 payload['params'] = {}
 payload['train'] = {}
 
@@ -44,7 +44,7 @@ re = requests.post("http://127.0.0.1:1234/api/v1.0/lvq/train", data = payload, h
 print(re.text)
 
 payload = {}
-payload["model_id"] = "model-1"
+payload["model_id"] = "model-2"
 payload["data"] = X_test.tolist()
 payload = json.dumps(payload)
 re = requests.post("http://127.0.0.1:1234/api/v1.0/lvq/predict", data = payload, headers = headers)
