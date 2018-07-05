@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_restful import Resource, Api, reqparse
 from lvq_network import LvqNetworkWithNeighborhood
 import pymongo
@@ -7,6 +7,7 @@ import numpy as np
 import ast
 from sklearn.preprocessing import LabelEncoder
 import json
+import os
 
 # Initializing connection with mongodb database
 client = MongoClient('localhost', 27017)
@@ -17,60 +18,101 @@ app = Flask(__name__)
 api = Api(app)
 
 class LVQTrainAPI(Resource):
-  def __init__(self):
-    self.reqparse = reqparse.RequestParser()
-    self.reqparse.add_argument('model_id', type = str, required = True, location = 'json')
-    self.reqparse.add_argument('n_rows', type = int, required = True, location = 'json')
-    self.reqparse.add_argument('n_cols', type = int, required = True, location = 'json')
-    self.reqparse.add_argument('learning_rate', type = float, required = True, location = 'json')
-    self.reqparse.add_argument('decay_rate', type = float, required = True, location = 'json')
-    self.reqparse.add_argument('neighborhood', type = str, required = True, location = 'json')
-    self.reqparse.add_argument('sigma', type = float, default = 1, location = 'json')
-    self.reqparse.add_argument('sigma_decay_rate', type = float, default = 1, location = 'json')
-    self.reqparse.add_argument('bias', type = bool, default = True, location = 'json')
-    self.reqparse.add_argument('weights_initialization', type = str, default = "random", location = 'json')
-    self.reqparse.add_argument('X', required = True, location = 'json', action = "append")
-    self.reqparse.add_argument('y', required = True, location = 'json', action = "append")
-    self.reqparse.add_argument('num_iteration', type = int, required = True, location = 'json')
-    self.reqparse.add_argument('epoch_size', type = int, required = True, location = 'json')
 
   def post(self):
-    # Request's arguments
-    args = self.reqparse.parse_args()
-    
-    # Training dataset
-    X = args['X']
-    y = args['y']
-    X = [ast.literal_eval(x) for x in X]
-    y = [ast.literal_eval(i) for i in y]
-    X = np.array(X)
-    y = np.array(y)
+    # Request's data
+    json_data = request.get_json()
 
+    # Required parameters
+    required_params = ['n_rows', 'n_cols', 'learning_rate', 'decay_rate', 'weights_initialization', 'num_iteration', 'epoch_size']
+    optional_neighborhood = ['neighborhood', 'sigma', 'sigma_decay_rate']
+
+    # Model id
+    model_id = None
+    if json_data.get('model_id'):
+      model_id = json_data.get('model_id')
+    else:
+      return {"message": "No model id is provided"}, 400
+
+    # Parameters
+    params = {}
+    if not json_data.get('params'):
+      return {"message": "No params is provided"}, 400
+    # Required parameters
+    for param in required_params:
+      if json_data.get('params').get(param):
+        params[param] = json_data.get('params').get(param)
+      else:
+        return {"message": "No %s is provided"%param}, 400
+    # Optional parameters
+    if json_data.get('params').get('neighborhood'):
+      for param in optional_neighborhood:
+        if json_data.get('params').get(param):
+          params[param] = json_data.get('params').get(param)
+        else:
+          return {"message": "No %s is provided"%param}, 400
+    else:
+      params['neighborhood'] = None
+      params['sigma'] = 0
+      params['sigma_decay_rate'] = 1
+
+    # Training dataset
+    if not json_data.get('train'):
+      return {"message": "No dataset is provided"}, 400
+    X_train = None
+    y_train = None
+    if json_data.get('train').get('data') and json_data.get('train').get('target'):
+      X_train = json_data.get('train').get('data')
+      y_train = json_data.get('train').get('target')
+    else:
+      return {"message": "Dataset is lack of training set or target set"}, 400
+    X_train = np.array(X_train)
+    X_train = X_train.T
+    y_train = np.array(y_train).astype(np.int8)
+    
+    # Data preprocessing
+    sc = None
+    from sklearn.preprocessing import MinMaxScaler
+    if params.get('weights_initialization') == 'pca':  
+      sc = MinMaxScaler(feature_range = (-1, 1))
+    else:
+      sc = MinMaxScaler(feature_range = (0, 1))
+    X_train = sc.fit_transform(X_train)
+
+    from sklearn.preprocessing import LabelEncoder
+    label_encoder = LabelEncoder()
+    y_train = label_encoder.fit_transform(y_train)
+    
     # Number of class
-    n_class = len(np.unique(y))
+    n_class = len(np.unique(y_train))
 
     # Number of features in the dataset
-    n_feature = X.shape[1]
+    n_feature = X_train.shape[1]
     
-    # Model id
-    model_id = args['model_id']
+    # Training the LVQ model
+    lvq = LvqNetworkWithNeighborhood(n_feature = n_feature, n_rows = params.get('n_rows'), n_cols = params.get('n_cols'),
+                                    n_class = n_class,
+                                    learning_rate = params.get('learning_rate'), decay_rate = params.get('decay_rate'),
+                                    sigma = params.get('sigma'), sigma_decay_rate = params.get('sigma_decay_rate'),
+                                    neighborhood = params.get('neighborhood'))
 
-    lvq = LvqNetworkWithNeighborhood(n_feature = n_feature, n_rows = args['n_rows'], n_cols = args['n_cols'], n_class = n_class,
-                                    learning_rate = args['learning_rate'], decay_rate = args['decay_rate'],
-                                    sigma = args['sigma'], sigma_decay_rate = args['sigma_decay_rate'],
-                                    neighborhood = args['neighborhood'])
+    if params.get('weights_initialization') == 'pca':
+      lvq.pca_weights_init(X_train)
+    elif params.get('weights_initialization') == 'sample':
+      lvq.sample_weights_init(X_train)
 
-    lvq.train_batch(X, y, num_iteration = args['num_iteration'], epoch_size = args['epoch_size'])
+    lvq.train_batch(X_train, y_train, num_iteration = params.get('num_iteration'), epoch_size = params.get('epoch_size'))
 
-    lvq_properties = {
-      "n_rows": args.get('n_rows'),
-      "n_cols": args.get('n_cols'),
-      "competitive_layer_weights": lvq._competitive_layer_weights.tolist(),
-      "linear_layer_weights": lvq._linear_layer_weights.tolist()
-    }
-
-    collection.update_one({"model_id": model_id}, {"$set": lvq_properties}, upsert = True)
-    return {"status": "OK"}, 200
+    # Dumping the models
+    from sklearn.externals import joblib
+    lvq_model_filepath = os.path.dirname(os.getcwd()) + '/dump_model/' + model_id + ".sav"
+    scaler_model_filepath = os.path.dirname(os.getcwd()) + '/dump_model/' + model_id + "_scaler.sav"
+    label_model_filepath = os.path.dirname(os.getcwd()) + '/dump_model/' + model_id + "_label.sav"
+    joblib.dump(lvq, lvq_model_filepath)
+    joblib.dump(sc, scaler_model_filepath)
+    joblib.dump(label_encoder, label_model_filepath)
+    
+    return {'message': 'success'}, 201
     
 
 class LVQPredictAPI(Resource):
@@ -80,30 +122,53 @@ class LVQPredictAPI(Resource):
     self.reqparse.add_argument('X', required = True, location = 'json', action = 'append')
 
   def post(self):
-    args = self.reqparse.parse_args()
-    print(args.get("model_id"))
-    properties = collection.find_one({"model_id": str(args.get("model_id"))})
-    competitive_layer_weights = np.array(properties.get('competitive_layer_weights'))
-    linear_layer_weights = np.array(properties.get('linear_layer_weights'))
-    n_rows = properties.get("n_rows")
-    n_cols = properties.get("n_cols")
-    n_feature = competitive_layer_weights.shape[1]
-    n_class = linear_layer_weights.shape[0]
-    lvq = LvqNetworkWithNeighborhood(n_rows = n_rows, n_cols = n_cols, n_feature = n_feature, n_class = n_class)
-    lvq._competitive_layer_weights = competitive_layer_weights
-    lvq._linear_layer_weights = linear_layer_weights
-    X = args['X']
-    X = [ast.literal_eval(x) for x in X]
-    X = np.array(X)
-    # print(X)
-    y_pred = lvq.predict(X)
+    # Request's data
+    json_data = request.get_json()
+    
+    # Model_id
+    model_id = None
+    if json_data.get('model_id'):
+      model_id = json_data.get('model_id')
+    else:
+      return {"message": "No model id is provided"}, 400
+
+    # Predicting dataset
+    X_pred = None
+    if json_data.get('data'):
+      X_pred = json_data.get('data')
+    else:  
+      return {"message": "No dataset is provided"}, 400
+    X_pred = np.array(X_pred)
+    X_pred = X_pred.T
+    
+    # Loading trained model
+    from sklearn.externals import joblib
+    lvq = None
+    sc = None
+    label_encoder = None
+    try:
+      lvq_model_filepath = os.path.dirname(os.getcwd()) + '/dump_model/' + model_id + ".sav"
+      scaler_model_filepath = os.path.dirname(os.getcwd()) + '/dump_model/' + model_id + "_scaler.sav"
+      label_model_filepath = os.path.dirname(os.getcwd()) + '/dump_model/' + model_id + "_label.sav"
+      lvq = joblib.load(lvq_model_filepath)
+      sc = joblib.load(scaler_model_filepath)
+      label_encoder = joblib.load(label_model_filepath)
+    except:
+      return {"message": "Model has not been created yet"}, 400
+    X_pred = sc.transform(X_pred)
+    y_pred = lvq.predict(X_pred).astype(np.int8)
+    y_pred = label_encoder.inverse_transform(y_pred)
+    
+    # Generating response
     response = {}
     response['y_pred'] = y_pred.tolist()
+    response['message'] = 'success'
     response = json.dumps(response)
-    return response, 200
+    # print(response)
+    return response, 201
 
 api.add_resource(LVQTrainAPI, '/api/v1.0/lvq/train')
 api.add_resource(LVQPredictAPI, '/api/v1.0/lvq/predict')
 
 if __name__ == "__main__":
-  app.run(port=1234)
+  app.run(port = 1234)

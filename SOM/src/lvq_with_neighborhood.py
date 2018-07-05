@@ -26,10 +26,10 @@ X_test = sc.transform(X_test)
 from lvq_network import LvqNetworkWithNeighborhood
 lvq = LvqNetworkWithNeighborhood(n_feature = 7, n_rows = 9, n_cols = 9, n_class = 3,
                                 learning_rate = 0.5, decay_rate = 1,
-                                sigma = 1, sigma_decay_rate = 1,
+                                sigma = 2, sigma_decay_rate = 1,
                                 neighborhood="bubble")
-# lvq.sample_weights_init(X_train)
-lvq.pca_weights_init(X_train)
+lvq.sample_weights_init(X_train)
+# lvq.pca_weights_init(X_train)
 lvq.train_batch(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
 
 # Predict the result
