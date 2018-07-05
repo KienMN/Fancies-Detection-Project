@@ -1,18 +1,10 @@
 from flask import Flask, jsonify, request
 from flask_restful import Resource, Api, reqparse
 from lvq_network import LvqNetworkWithNeighborhood
-import pymongo
-from pymongo import MongoClient
 import numpy as np
-import ast
 from sklearn.preprocessing import LabelEncoder
 import json
 import os
-
-# Initializing connection with mongodb database
-client = MongoClient('localhost', 27017)
-database = client.neural_network
-collection = database.lvq
 
 app = Flask(__name__)
 api = Api(app)
