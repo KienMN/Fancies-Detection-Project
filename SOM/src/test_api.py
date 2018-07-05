@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import os
 
+server_address = "http://13.251.24.65"
 headers = {"content-type": "application/json"}
 
 payload = {}
@@ -40,14 +41,17 @@ payload['params']["epoch_size"] = len(X)
 
 payload = json.dumps(payload)
 
-re = requests.post("http://127.0.0.1:1234/api/v1.0/lvq/train", data = payload, headers = headers)
+uri = server_address + ":1234/api/v1.0/lvq/train"
+re = requests.post(uri, data = payload, headers = headers)
 print(re.text)
 
 payload = {}
 payload["model_id"] = "model-2"
 payload["data"] = X_test.tolist()
 payload = json.dumps(payload)
-re = requests.post("http://127.0.0.1:1234/api/v1.0/lvq/predict", data = payload, headers = headers)
+
+uri = server_address + ":1234/api/v1.0/lvq/predict"
+re = requests.post(uri, data = payload, headers = headers)
 
 res = re.json()
 res = json.loads(res)

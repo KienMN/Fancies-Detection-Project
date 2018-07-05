@@ -163,4 +163,4 @@ api.add_resource(LVQTrainAPI, '/api/v1.0/lvq/train')
 api.add_resource(LVQPredictAPI, '/api/v1.0/lvq/predict')
 
 if __name__ == "__main__":
-  app.run(port = 1234)
+  app.run(host = "0.0.0.0", port = 1234)
