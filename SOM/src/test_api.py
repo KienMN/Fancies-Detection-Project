@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import os
 
-server_address = "http://13.251.24.65"
+server_address = "http://127.0.0.1"
 headers = {"content-type": "application/json"}
 
 payload = {}

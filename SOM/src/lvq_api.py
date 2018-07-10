@@ -9,9 +9,24 @@ import os
 app = Flask(__name__)
 api = Api(app)
 
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+    return response
+
 class LVQTrainAPI(Resource):
 
+  # def options (self):
+  #   return {'Allow' : 'POST' }, 200, \
+  #   { 'Access-Control-Allow-Origin': '*', \
+  #     'Access-Control-Allow-Methods' : 'POST,GET',
+  #     'Access-Control-Allow-Headers': 'Content-Type' }
+
   def post(self):
+    
+    
     # Request's data
     json_data = request.get_json()
 
@@ -82,18 +97,21 @@ class LVQTrainAPI(Resource):
     n_feature = X_train.shape[1]
     
     # Training the LVQ model
-    lvq = LvqNetworkWithNeighborhood(n_feature = n_feature, n_rows = params.get('n_rows'), n_cols = params.get('n_cols'),
-                                    n_class = n_class,
-                                    learning_rate = params.get('learning_rate'), decay_rate = params.get('decay_rate'),
-                                    sigma = params.get('sigma'), sigma_decay_rate = params.get('sigma_decay_rate'),
-                                    neighborhood = params.get('neighborhood'))
+    try:
+      lvq = LvqNetworkWithNeighborhood(n_feature = n_feature, n_rows = params.get('n_rows'), n_cols = params.get('n_cols'),
+                                      n_class = n_class,
+                                      learning_rate = params.get('learning_rate'), decay_rate = params.get('decay_rate'),
+                                      sigma = params.get('sigma'), sigma_decay_rate = params.get('sigma_decay_rate'),
+                                      neighborhood = params.get('neighborhood'))
 
-    if params.get('weights_initialization') == 'pca':
-      lvq.pca_weights_init(X_train)
-    elif params.get('weights_initialization') == 'sample':
-      lvq.sample_weights_init(X_train)
+      if params.get('weights_initialization') == 'pca':
+        lvq.pca_weights_init(X_train)
+      elif params.get('weights_initialization') == 'sample':
+        lvq.sample_weights_init(X_train)
 
-    lvq.train_batch(X_train, y_train, num_iteration = params.get('num_iteration'), epoch_size = params.get('epoch_size'))
+      lvq.train_batch(X_train, y_train, num_iteration = params.get('num_iteration'), epoch_size = params.get('epoch_size'))
+    except TypeError:
+      return {"message": "Some data in the body has wrong type"}, 400
 
     # Dumping the models
     from sklearn.externals import joblib
@@ -104,7 +122,7 @@ class LVQTrainAPI(Resource):
     joblib.dump(sc, scaler_model_filepath)
     joblib.dump(label_encoder, label_model_filepath)
     
-    return {'message': 'success'}, 201
+    return {'message': 'success', 'status': 200}, 200
     
 
 class LVQPredictAPI(Resource):
@@ -146,21 +164,22 @@ class LVQPredictAPI(Resource):
       sc = joblib.load(scaler_model_filepath)
       label_encoder = joblib.load(label_model_filepath)
     except:
-      return {"message": "Model has not been created yet"}, 400
+      return {"message": "Can not found model id"}, 400
     X_pred = sc.transform(X_pred)
     y_pred = lvq.predict(X_pred).astype(np.int8)
     y_pred = label_encoder.inverse_transform(y_pred)
     
     # Generating response
     response = {}
-    response['y_pred'] = y_pred.tolist()
+    response['target'] = y_pred.tolist()
     response['message'] = 'success'
     response = json.dumps(response)
+    response['status'] = 200
     # print(response)
-    return response, 201
+    return response, 200
 
 api.add_resource(LVQTrainAPI, '/api/v1.0/lvq/train')
 api.add_resource(LVQPredictAPI, '/api/v1.0/lvq/predict')
 
 if __name__ == "__main__":
-  app.run(host = "0.0.0.0", port = 1234)
+  app.run(host = '0.0.0.0', port = 1234)
