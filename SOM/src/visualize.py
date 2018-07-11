@@ -1,12 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 from pylab import bone, plot, show, pcolor, colorbar
 
 fig = plt.figure(figsize = (6, 6))
-# plt.pcolor([[1, 2, 3, 4], [1, 2, 3, 4], [4, 3, 2, 1], [2, 3, 4, 1]])
 ax = fig.add_axes([0, 0, 1, 1])
-# ax.imshow([[1, 2, 3, 4], [3, 4, 1, 2], [1, 2, 4, 3], [3, 4, 2, 1]])
 ax.pcolormesh(np.array([[1, 2, 3, 4], [1, 4, 1, 2], [1, 2, 4, 3], [3, 4, 2, 1]]))
 ax.set_yticklabels([])
 ax.set_xticklabels([])
