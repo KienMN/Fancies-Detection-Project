@@ -25,20 +25,14 @@ sc = MinMaxScaler(feature_range = (0, 1))
 X_train = sc.fit_transform(X_train)
 X_test = sc.transform(X_test)
 
-# Label encoder
-from sklearn.preprocessing import LabelEncoder
-label_encoder = LabelEncoder()
-y_train = label_encoder.fit_transform(y_train)
-
 # Training the LVQ
 from detection.competitive_learning_network import LvqNetwork
 lvq = LvqNetwork(n_feature = 6, n_subclass = 100, n_class = 4, learning_rate = 0.5, decay_rate = 1, weights_normalization="length")
 lvq.sample_weights_init(X_train)
-lvq.train_batch(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
+lvq.fit(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
 
 # Predict the result
 y_pred = lvq.predict(X_test)
-y_pred = label_encoder.inverse_transform(y_pred)
 
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix

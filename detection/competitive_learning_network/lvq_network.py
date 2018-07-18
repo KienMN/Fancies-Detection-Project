@@ -124,7 +124,7 @@ class LvqNetwork(object):
           self._linear_layer_weights[i][j] = 1
     
     # Label encoder
-    self.label_encoder = LabelEncoder()
+    self._label_encoder = LabelEncoder()
 
   def sample_weights_init(self, data):
     """Initializes the weights of the competitive layer, picking random samples from data"""
@@ -170,13 +170,30 @@ class LvqNetwork(object):
       norm = fast_norm(self._competitive_layer_weights[win_idx])
       self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] / norm
 
-  def train_batch(self, X, y, num_iteration, epoch_size):
-    """Trains using all the vectors in data sequentially"""
+  def fit(self, X, y, num_iteration, epoch_size):
+    """
+    Training the network using vectors in data sequentially
+    
+    X: 2D numpy array
+      Matrix of input vectors
+    y: 1D numpy array
+      Class corresponding to input matrix vectors
+    num_iteration: int
+      Number of iterations
+    epoch_size: int
+      Size of chunk of data, after each chunk of data, parameter such as learning rate and sigma will be recalculated
+    """
+
     if len(X.shape) <= 1:
       raise Exception("Data is expected to be 2D array")
     elif X.shape[1] != self._n_feature:
       raise Exception("Data must have the same number of features as the number of features of the model")
-    y = self.label_encoder.fit_transform(y)
+    y = y.astype(np.int8)
+    y = self._label_encoder.fit_transform(y)
+    self.train_batch(X, y, num_iteration, epoch_size)
+
+  def train_batch(self, X, y, num_iteration, epoch_size):
+    """Looping through input vectors to update weights of neurons"""
     iteration = 0
     while iteration < num_iteration:
       idx = iteration % len(X)
@@ -185,14 +202,19 @@ class LvqNetwork(object):
       iteration += 1
 
   def predict(self, X):
-    """Classifies new data"""
-    y_pred = np.array([])
+    """
+    Predicting the class according to input vectors
+
+    X: 2D numpy array
+      Matrix of input vectors
+    """
+    y_pred = np.array([]).astype(np.int8)
     n_sample = len(X)
     for i in range (n_sample):
       win = self.winner(X[i])
-      y_pred = append(y_pred, self.classify(win))
+      y_pred = append(y_pred, int(self.classify(win)))
     print(y_pred)
-    y_pred = self.label_encoder.inverse_transform(y_pred.astype(np.int8))
+    y_pred = self._label_encoder.inverse_transform(y_pred)
     print(y_pred)
     return y_pred
 
@@ -399,7 +421,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
           meshgrid[i][j] = c
           break
     meshgrid = meshgrid.astype(np.int8)
-    meshgrid = self.label_encoder.inverse_transform(meshgrid)
+    meshgrid = self._label_encoder.inverse_transform(meshgrid)
 
     # Drawing meshgrid of the layer
     from matplotlib import pyplot as plt
@@ -502,10 +524,6 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     """
     Fitting the weights of the neurons in the competitive layer before labeling class for each neurons
     """
-    if len(X.shape) <= 1:
-      raise Exception("Data is expected to be 2D array")
-    elif X.shape[1] != self._n_feature:
-      raise Exception("Data must have the same number of features as the number of features of the model")
     iteration = 0
     while iteration < num_iteration:
       idx = iteration % len(X)
@@ -517,8 +535,6 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     """
     Labeling class for each neurons in the competitve layer according to the most used class
     """
-    label_encoder = LabelEncoder()
-    y = label_encoder.fit_transform(y)
     self._number_of_neurons_each_classes = zeros(self._n_class)
     class_win = zeros((self._n_subclass, self._n_class))
     m = len(X)
@@ -537,6 +553,13 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     """
     Training the network using vectors in data sequentially
     """
+    if len(X.shape) <= 1:
+      raise Exception("Data is expected to be 2D array")
+    elif X.shape[1] != self._n_feature:
+      raise Exception("Data must have the same number of features as the number of features of the model")
+    y = y.astype(np.int8)
+    y = self._label_encoder.fit_transform(y)
+    
     # Phase 1: Training using SOM concept
     self.train_competitive(X, first_num_iteration, first_epoch_size)
     self.label_neurons(X, y)
