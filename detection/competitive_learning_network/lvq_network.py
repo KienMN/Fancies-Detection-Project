@@ -1,45 +1,9 @@
-from math import sqrt, exp
+from math import exp
 import numpy as np
 from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder
-
-def fast_norm(x):
-  """
-  Returns norm-2 of a 1-D numpy array.
-  """
-  return sqrt(dot(x, x.T))
-
-def compet(x):
-  """
-  Returns a 1-D numpy array with the same size as x,
-  where the element having the index of the maximum value in x has value 1, others have value 0.
-  """
-  idx = argmax(x)
-  res = zeros((len(x)))
-  res[idx] = 1
-  return(res)
-
-def euclidean_distance(a, b):
-  """
-  Returns Euclidean distance between 2 vectors.
-  """
-  x = a - b
-  return(fast_norm(x))
-
-def default_bias_function(biasses, win_idx):
-  """
-  Default function that reduces bias value of winner neuron and increases bias value of other neurons
-  """
-  biasses = biasses * 0.9
-  biasses[win_idx] = biasses[win_idx] / 0.9 - 0.2
-  return biasses
-
-def default_learning_rate_decay_function(learning_rate, iteration, decay_rate):
-  return learning_rate / (1 + decay_rate * iteration)
-
-def default_radius_decay_function(sigma, iteration, decay_rate):
-  return sigma / (1 + decay_rate * iteration)
+from .utils import fast_norm, compet, euclidean_distance, default_bias_function, default_learning_rate_decay_function, default_radius_decay_function
 
 class LvqNetwork(object):
   def __init__(self, n_feature, n_subclass, n_class,
