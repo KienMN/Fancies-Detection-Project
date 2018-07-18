@@ -1,7 +1,8 @@
 from math import sqrt, exp
 import numpy as np
-from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin
+from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import LabelEncoder
 
 def fast_norm(x):
   """
@@ -121,6 +122,9 @@ class LvqNetwork(object):
       else:
         for j in range (i * n_subclass_per_class, n_subclass):
           self._linear_layer_weights[i][j] = 1
+    
+    # Label encoder
+    self.label_encoder = LabelEncoder()
 
   def sample_weights_init(self, data):
     """Initializes the weights of the competitive layer, picking random samples from data"""
@@ -172,11 +176,12 @@ class LvqNetwork(object):
       raise Exception("Data is expected to be 2D array")
     elif X.shape[1] != self._n_feature:
       raise Exception("Data must have the same number of features as the number of features of the model")
+    y = self.label_encoder.fit_transform(y)
     iteration = 0
     while iteration < num_iteration:
       idx = iteration % len(X)
       epoch = iteration // epoch_size
-      self.update(X[idx], y[idx], epoch)
+      self.update(x = X[idx], y = y[idx], epoch = epoch)
       iteration += 1
 
   def predict(self, X):
@@ -186,6 +191,9 @@ class LvqNetwork(object):
     for i in range (n_sample):
       win = self.winner(X[i])
       y_pred = append(y_pred, self.classify(win))
+    print(y_pred)
+    y_pred = self.label_encoder.inverse_transform(y_pred.astype(np.int8))
+    print(y_pred)
     return y_pred
 
   def details(self):
@@ -340,7 +348,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
         norm = fast_norm(self._competitive_layer_weights[i])
         self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
 
-  def update(self, x, y, epoch):
+  def update(self, x, epoch, y = None):
     """Updates the weights of competitive layer and biasees value"""
     win = self.winner(x)
     win_idx = argmax(win)
@@ -349,7 +357,11 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     alpha = self._learning_rate_decay_function(self._learning_rate, epoch, self._decay_rate)
     radius = self._radius_decay_function(self._radius, epoch, self._radius_decay_rate)
     correlation = self.neighborhood(win_idx, radius)
-    is_class = self.is_class(y)
+    is_class = None
+    if y is not None:
+      is_class = self.is_class(y)
+    else:
+      is_class = ones(self._n_subclass)
     for i in range(self._n_subclass):
       self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * alpha * correlation[i] * (x - self._competitive_layer_weights[i])
       # Normalizing the weights
@@ -387,6 +399,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
           meshgrid[i][j] = c
           break
     meshgrid = meshgrid.astype(np.int8)
+    meshgrid = self.label_encoder.inverse_transform(meshgrid)
 
     # Drawing meshgrid of the layer
     from matplotlib import pyplot as plt
@@ -426,3 +439,106 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
       plt.savefig(figure_path)
     else:
       plt.show()
+
+class AdaptiveLVQ(LvqNetworkWithNeighborhood):
+  def __init__(self, n_feature, n_rows, n_cols, n_class,
+              learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
+              bias_function = None, weights_normalization = None,
+              sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
+              neighborhood = None):
+    """
+    Initializing a Learning Vector Quantization with flexible competitive layer
+
+    Parameters:
+    
+    n_feature: int
+      Number of features of the dataset
+
+    n_rows: int
+      Number of rows in the competitive layer
+
+    n_cols: int
+      Number of columns in the competitive layer
+
+    n_class: int
+      Number of classes of the dataset
+
+    learning_rate: float, default = 0.5
+      Learning rate of the algorithm
+
+    learning_rate_decay_function: function, default = None
+      Function that decreases learning rate after number of iterations
+    
+    decay_rate: float, default = 1
+      Reduction rate of learning rate after number of iterations
+    
+    bias_function: function, default = None
+      Function that updates biases value of neurons in the competitive layer
+
+    weights_normalization: option ["length"], default = None
+      Normalizing weights of neuron
+
+    sigma: float
+      Radius of neighborhood around winner neuron in the competitive layer
+
+    sigma_decay_function:
+      Function that decreases sigma after number of iterations
+
+    sigma_decay_rate: float, default = 1
+      Reduction rate of sigma after number of iterations
+
+    neighborhood: option ["bubble", "gaussian"], default = None
+      Function that determines coefficient for neighbors of winner neuron in competitive layer
+    """
+
+    super().__init__(n_feature, n_rows, n_cols, n_class,
+                    learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
+                    bias_function = None, weights_normalization = None,
+                    sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
+                    neighborhood = None)
+    self._linear_layer_weights = zeros((n_class, n_rows * n_cols))
+
+  def train_competitive(self, X, num_iteration, epoch_size):
+    """
+    Fitting the weights of the neurons in the competitive layer before labeling class for each neurons
+    """
+    if len(X.shape) <= 1:
+      raise Exception("Data is expected to be 2D array")
+    elif X.shape[1] != self._n_feature:
+      raise Exception("Data must have the same number of features as the number of features of the model")
+    iteration = 0
+    while iteration < num_iteration:
+      idx = iteration % len(X)
+      epoch = iteration // epoch_size
+      self.update(x = X[idx], epoch = epoch)
+      iteration += 1
+
+  def label_neurons(self, X, y):
+    """
+    Labeling class for each neurons in the competitve layer according to the most used class
+    """
+    label_encoder = LabelEncoder()
+    y = label_encoder.fit_transform(y)
+    self._number_of_neurons_each_classes = zeros(self._n_class)
+    class_win = zeros((self._n_subclass, self._n_class))
+    m = len(X)
+    for idx in range (m):
+      win = self.winner(X[idx])
+      win_idx = argmax(win)
+      class_win[win_idx][y[idx]] += 1
+
+    for idx in range (self._n_subclass):
+      neuron_class_win = argwhere(class_win[idx] == amax(class_win[idx])).ravel()
+      class_name = neuron_class_win[argmin(self._number_of_neurons_each_classes[neuron_class_win])]
+      self._number_of_neurons_each_classes[class_name] += 1
+      self._linear_layer_weights[class_name][idx] = 1
+
+  def fit(self, X, y, first_num_iteration, first_epoch_size, second_num_iteration, second_epoch_size):
+    """
+    Training the network using vectors in data sequentially
+    """
+    # Phase 1: Training using SOM concept
+    self.train_competitive(X, first_num_iteration, first_epoch_size)
+    self.label_neurons(X, y)
+    # Phase 2: Training using LVQ concept
+    self.train_batch(X, y, second_num_iteration, second_epoch_size)
