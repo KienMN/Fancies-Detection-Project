@@ -1,6 +1,6 @@
 from math import exp
 import numpy as np
-from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin
+from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin, argsort
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder
 from .utils import fast_norm, compet, euclidean_distance, default_bias_function, default_learning_rate_decay_function, default_radius_decay_function
@@ -135,17 +135,27 @@ class LvqNetwork(object):
       self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] / norm
 
   def fit(self, X, y, num_iteration, epoch_size):
-    """
-    Training the network using vectors in data sequentially
+    """Fit the model according to the given training data.
     
-    X: 2D numpy array
-      Matrix of input vectors
-    y: 1D numpy array
-      Class corresponding to input matrix vectors
-    num_iteration: int
-      Number of iterations
-    epoch_size: int
-      Size of chunk of data, after each chunk of data, parameter such as learning rate and sigma will be recalculated
+    Parameters
+    ----------
+    X : 2D numpy array, shape (n_samples, n_features)
+      Training vectors, where n_samples is the number of samples and
+      n_features is the number of features.
+    
+    y : 1D numpy array, shape (n_samples,)
+      Target vector relative to X.
+    
+    num_iteration : int
+      Number of iterations.
+
+    epoch_size : int
+      Size of chunk of data, after each chunk of data, parameter such as learning rate and sigma will be recalculated.
+    
+    Returns
+    -------
+    self : object
+      Returns self.
     """
 
     if len(X.shape) <= 1:
@@ -156,6 +166,8 @@ class LvqNetwork(object):
     y = self._label_encoder.fit_transform(y)
     self.train_batch(X, y, num_iteration, epoch_size)
 
+    return self
+
   def train_batch(self, X, y, num_iteration, epoch_size):
     """Looping through input vectors to update weights of neurons"""
     iteration = 0
@@ -165,22 +177,64 @@ class LvqNetwork(object):
       self.update(x = X[idx], y = y[idx], epoch = epoch)
       iteration += 1
 
-  def predict(self, X):
-    """
-    Predicting the class according to input vectors
+  def predict(self, X, confidence = False):
+    """Predicting the class according to input vectors
 
-    X: 2D numpy array
-      Matrix of input vectors
+    Parameters
+    ----------
+
+    X : 2D numpy array, shape (n_samples, n_features)
+      Data vectors, where n_samples is the number of samples and
+      n_features is the number of features.
+
+    confidence : bool, default: False
+      Computes and returns confidence score if confidence is true
+
+    Returns
+    -------
+    y_pred : 1D numpy array, shape (n_samples,)
+      Prediction target vector relative to X.
+
+    confidence_score : 1D numpy array, shape (n_samples,)
+      If confidence is true, returns confidence scores of prediction has been made
     """
-    y_pred = np.array([]).astype(np.int8)
+    y_pred = array([]).astype(np.int8)
+    confidence_score = array([])
+    k = self._n_subclass // 20
     n_sample = len(X)
     for i in range (n_sample):
-      win = self.winner(X[i])
-      y_pred = append(y_pred, int(self.classify(win)))
-    print(y_pred)
+      x = X[i]
+      win = self.winner(x)
+      y_i = int(self.classify(win))
+      y_pred = append(y_pred, y_i)
+
+      # Computing confidence score
+      if confidence:
+        distances = array([])
+        classes = array([]).astype(np.int8)
+        
+        for j in range (self._n_subclass):
+          distance = euclidean_distance(x, self._competitive_layer_weights[j]) - self._biases[j]
+          class_name = argmax(self._linear_layer_weights[:, j])
+          distances = append(distances, distance)
+          classes = append(classes, int(class_name))
+        
+        neighbors = argsort(distances)
+        a = 0
+        b = 0
+        
+        for j in range (k):
+          if classes[neighbors[j]] == y_i:
+            a = a + exp(-(distances[neighbors[j]] ** 2))
+          b = b + exp(-(distances[neighbors[j]] ** 2))
+        confidence_score = append(confidence_score, a / b)  
+
     y_pred = self._label_encoder.inverse_transform(y_pred)
-    print(y_pred)
-    return y_pred
+    
+    if confidence:
+      return y_pred, confidence_score
+    else:
+      return y_pred
 
   def details(self):
     """Prints parameters of lvq"""
@@ -516,6 +570,24 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
   def fit(self, X, y, first_num_iteration, first_epoch_size, second_num_iteration, second_epoch_size):
     """
     Training the network using vectors in data sequentially
+
+    X: 2D numpy array
+      Matrix of input vectors
+
+    y: 1D numpy array
+      Class corresponding to input vectors
+
+    first_num_iteration: int
+      Number of iterations of the first phase of training
+
+    first_epoch_size: int
+      Size of chunk of data for the first phase of training
+
+    second_num_iteration: int
+      Number of iterations of the second phase of training
+
+    second_epoch_size: int
+      Size of chunk of data for the second phase of training
     """
     if len(X.shape) <= 1:
       raise Exception("Data is expected to be 2D array")

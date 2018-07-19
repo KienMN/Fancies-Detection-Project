@@ -37,7 +37,7 @@ lvq.pca_weights_init(X_train)
 lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 100, second_num_iteration = 4000, second_epoch_size = 100)
 
 # Predict the result
-y_pred = lvq.predict(X_test)
+y_pred, confidence_score = lvq.predict(X_test, confidence = 1)
 
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix

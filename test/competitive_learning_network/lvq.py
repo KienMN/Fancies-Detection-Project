@@ -34,6 +34,9 @@ lvq.fit(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
 # Predict the result
 y_pred = lvq.predict(X_test)
 
+for i in range (len(y_pred)):
+  print("y_pred:", y_pred[i], "y_true:", y_test[i], "confidence:", confidence_score[i])
+
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix
 cm = confusion_matrix(y_test, y_pred)
@@ -41,3 +44,5 @@ cm = confusion_matrix(y_test, y_pred)
 # Printing the confusion matrix
 print(cm)
 print((cm[0][0] + cm[1][1] + cm[2][2] + cm[3][3]) / np.sum(cm))
+
+# lvq.details()
