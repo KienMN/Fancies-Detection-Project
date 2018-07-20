@@ -6,38 +6,39 @@ from sklearn.preprocessing import LabelEncoder
 from .utils import fast_norm, compet, euclidean_distance, default_bias_function, default_learning_rate_decay_function, default_radius_decay_function
 
 class LvqNetwork(object):
+  """Learning Vector Quantization.
+
+  Parameters
+  ----------
+  
+  n_feature : int
+    Number of features of the dataset.
+
+  n_subclass : int
+    Number of subclasses in the competitive layer.
+
+  n_class : int
+    Number of classes of the dataset.
+
+  learning_rate : float, default: 0.5
+    Learning rate of the algorithm.
+
+  learning_rate_decay_function : function, default: None
+    Function that decreases learning rate after number of iterations.
+  
+  decay_rate : float, default: 1
+    Reduction rate of learning rate after number of iterations.
+  
+  bias_function : function, default: None
+    Function that updates biases value of neurons in competitive layer.
+
+  weights_normalization : option ["length"], default: None
+    Normalizing weights of neuron.
+  """
+
   def __init__(self, n_feature, n_subclass, n_class,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
               bias_function = None, weights_normalization = None):
-    """
-    Initializing a Learning Vector Quantization
-
-    Parameters:
-    
-    n_feature: int
-      Number of features of the dataset
-
-    n_subclass: int
-      Number of subclasses in the competitive layer
-
-    n_class: int
-      Number of classes of the dataset
-
-    learning_rate: float, default = 0.5
-      Learning rate of the algorithm
-
-    learning_rate_decay_function: function, default = None
-      Function that decreases learning rate after number of iterations
-    
-    decay_rate: float, default = 1
-      Reduction rate of learning rate after number of iterations
-    
-    bias_function: function, default = None
-      Function that updates biases value of neurons in competitive layer
-
-    weights_normalization: option ["length"], default = None
-      Normalizing weights of neuron
-    """
     if n_subclass < n_class:
       raise Exception("The number of subclasses must be more than or equal to the number of classes")
 
@@ -91,7 +92,19 @@ class LvqNetwork(object):
     self._label_encoder = LabelEncoder()
 
   def sample_weights_init(self, data):
-    """Initializes the weights of the competitive layer, picking random samples from data"""
+    """
+    Initializes the weights of the competitive layer, picking random samples from data.
+    
+    Parameters
+    ----------
+    data : 2D numpy array, shape (n_samples, n_features)
+      Data vectors, where n_samples is the number of samples and n_features is the number of features.
+
+    Returns
+    -------
+    self : object
+      Returns self.
+    """
     if len(data.shape) != 2:
       raise Exception("Data is expected to be 2D array")
     elif data.shape[1] != self._n_feature:
@@ -104,21 +117,64 @@ class LvqNetwork(object):
       if self._weights_normalization == "length":
         norm = fast_norm(self._competitive_layer_weights[i])
         self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
+    return self
 
   def winner(self, x):
-    """Determines the winner neuron in competitive layer"""
+    """
+    Determines the winner neuron in competitive layer.
+
+    Parameters
+    ----------
+    x : 1D numpy array, shape (n_features,)
+      Input vector where n_features is the number of features.
+
+    Returns
+    -------
+    n : 1D numpy array, shape (n_subclass,)
+      Array where element with index of the winner neuron has value 1, others have value 0.
+    """
     n = array([])
     for i in range(self._n_subclass):
       n = append(n, (-1) * euclidean_distance(x, self._competitive_layer_weights[i]) + self._biases[i])
     return compet(n)
 
   def classify(self, win):
-    """Classifies the winner neuron into one class"""
+    """
+    Classifies the winner neuron into one class.
+    
+    Parameters
+    ----------
+    win : 1D numpy array, shape (n_subclass,)
+      Array which determines the winner neuron.
+
+    Returns
+    -------
+    class : int
+      Class to which winner neuron belongs.
+    """
     n = dot(self._linear_layer_weights, win.T)
-    return argmax(n)
+    return int(argmax(n))
 
   def update(self, x, y, epoch):
-    """Updates the weights of competitive layer and the biases"""
+    """
+    Updates the weights of competitive layer and the biases.
+
+    Parameters
+    ----------
+    x : 1D numpy array shape (n_features,)
+      Input vector where n_features is the number of features.
+
+    y : int
+      Class to which input vector is relative.
+
+    epoch : int
+      Sequence number of epoch iterations, after each iterations, learning rate and sigma will be recalculated.
+
+    Returns
+    -------
+    self : object
+      Returns self.
+    """
     win = self.winner(x)
     win_idx = argmax(win)
     self._biases = self._bias_function(self._biases, win_idx)
@@ -140,8 +196,7 @@ class LvqNetwork(object):
     Parameters
     ----------
     X : 2D numpy array, shape (n_samples, n_features)
-      Training vectors, where n_samples is the number of samples and
-      n_features is the number of features.
+      Training vectors, where n_samples is the number of samples and n_features is the number of features.
     
     y : 1D numpy array, shape (n_samples,)
       Target vector relative to X.
@@ -157,7 +212,6 @@ class LvqNetwork(object):
     self : object
       Returns self.
     """
-
     if len(X.shape) <= 1:
       raise Exception("Data is expected to be 2D array")
     elif X.shape[1] != self._n_feature:
@@ -169,26 +223,46 @@ class LvqNetwork(object):
     return self
 
   def train_batch(self, X, y, num_iteration, epoch_size):
-    """Looping through input vectors to update weights of neurons"""
+    """Looping through input vectors to update weights of neurons.
+    
+    Parameters
+    ----------
+    X : 2D numpy array, shape (n_samples, n_features)
+      Training vectors, where n_samples is the number of samples and n_features is the number of features.
+    
+    y : 1D numpy array, shape (n_samples,)
+      Target vector relative to X.
+    
+    num_iteration : int
+      Number of iterations.
+
+    epoch_size : int
+      Size of chunk of data, after each chunk of data, parameter such as learning rate and sigma will be recalculated.
+
+    Returns
+    -------
+    self : object
+      Returns self.
+    """
     iteration = 0
     while iteration < num_iteration:
       idx = iteration % len(X)
       epoch = iteration // epoch_size
       self.update(x = X[idx], y = y[idx], epoch = epoch)
       iteration += 1
+    return self
 
   def predict(self, X, confidence = False):
-    """Predicting the class according to input vectors
+    """Predicting the class according to input vectors.
 
     Parameters
     ----------
 
     X : 2D numpy array, shape (n_samples, n_features)
-      Data vectors, where n_samples is the number of samples and
-      n_features is the number of features.
+      Data vectors, where n_samples is the number of samples and n_features is the number of features.
 
     confidence : bool, default: False
-      Computes and returns confidence score if confidence is true
+      Computes and returns confidence score if confidence is true.
 
     Returns
     -------
@@ -196,7 +270,7 @@ class LvqNetwork(object):
       Prediction target vector relative to X.
 
     confidence_score : 1D numpy array, shape (n_samples,)
-      If confidence is true, returns confidence scores of prediction has been made
+      If confidence is true, returns confidence scores of prediction has been made.
     """
     y_pred = array([]).astype(np.int8)
     confidence_score = array([])
@@ -248,57 +322,55 @@ class LvqNetwork(object):
     print(self._winner_count)
 
 class LvqNetworkWithNeighborhood(LvqNetwork):
+  """Learning Vector Quantization with Neighborhood concept.
+
+  Parameters
+  ----------
+
+  n_feature : int
+    Number of features of the dataset.
+
+  n_rows : int
+    Number of rows in the competitive layer.
+
+  n_cols : int
+    Number of columns in the competitive layer.
+
+  n_class : int
+    Number of classes of the dataset.
+
+  learning_rate : float, default: 0.5
+    Learning rate of the algorithm.
+
+  learning_rate_decay_function : function, default: None
+    Function that decreases learning rate after number of iterations.
+  
+  decay_rate : float, default: 1
+    Reduction rate of learning rate after number of iterations.
+  
+  bias_function : function, default: None
+    Function that updates biases value of neurons in the competitive layer.
+
+  weights_normalization : option ["length"], default: None
+    Normalizing weights of neuron.
+
+  sigma : float
+    Radius of neighborhood around winner neuron in the competitive layer.
+
+  sigma_decay_function : function, default: None
+    Function that decreases sigma after number of iterations.
+
+  sigma_decay_rate : float, default: 1
+    Reduction rate of sigma after number of iterations.
+
+  neighborhood : option ["bubble", "gaussian"], default: None
+    Function that determines coefficient for neighbors of winner neuron in competitive layer.
+  """
   def __init__(self, n_feature, n_rows, n_cols, n_class,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
               bias_function = None, weights_normalization = None,
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
               neighborhood = None):
-    
-    """
-    Initializing a Learning Vector Quantization with Neighborhood concept
-
-    Parameters:
-    
-    n_feature: int
-      Number of features of the dataset
-
-    n_rows: int
-      Number of rows in the competitive layer
-
-    n_cols: int
-      Number of columns in the competitive layer
-
-    n_class: int
-      Number of classes of the dataset
-
-    learning_rate: float, default = 0.5
-      Learning rate of the algorithm
-
-    learning_rate_decay_function: function, default = None
-      Function that decreases learning rate after number of iterations
-    
-    decay_rate: float, default = 1
-      Reduction rate of learning rate after number of iterations
-    
-    bias_function: function, default = None
-      Function that updates biases value of neurons in the competitive layer
-
-    weights_normalization: option ["length"], default = None
-      Normalizing weights of neuron
-
-    sigma: float
-      Radius of neighborhood around winner neuron in the competitive layer
-
-    sigma_decay_function:
-      Function that decreases sigma after number of iterations
-
-    sigma_decay_rate: float, default = 1
-      Reduction rate of sigma after number of iterations
-
-    neighborhood: option ["bubble", "gaussian"], default = None
-      Function that determines coefficient for neighbors of winner neuron in competitive layer
-    """
-
     super().__init__(n_feature = n_feature, n_subclass = n_rows * n_cols, n_class = n_class,
                     learning_rate = learning_rate, learning_rate_decay_function = learning_rate_decay_function,
                     decay_rate = decay_rate,
@@ -314,7 +386,21 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
       self._radius_decay_function = default_radius_decay_function
   
   def neighborhood(self, win_idx, radius):
-    """Computes correlation between each neurons and winner neuron"""
+    """Computes correlation between each neurons and winner neuron.
+    
+    Parameters
+    ----------
+    win_idx : int
+      Index of the winner neuron in the competitive layer.
+
+    radius : float
+      Radius of neighborhood around the winner neuron.
+
+    Returns
+    -------
+    correlation : 1D numpy array shape (n_subclass,)
+      Correlation coefficient between each neurons with the winner neuron where n_subclass is the number of neurons in the competitive layer.
+    """
     correlation = zeros(self._n_subclass)
     win_i = win_idx // self._n_cols_subclass
     win_j = win_idx % self._n_cols_subclass
@@ -337,7 +423,18 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     return correlation
 
   def is_class(self, y):
-    """Determines whether neurons in competitive layer belong to class y or not"""
+    """Determines whether neurons in competitive layer belong to class y or not.
+    
+    Parameters
+    ----------
+    y : int
+      Class name, i.e 0, 1,...
+
+    Returns
+    -------
+    res : 1D numpy array shape (n_subclass)
+      Sign of coefficient, (+) if neuron belongs to class y, (-) otherwise.
+    """
     res = copy(self._linear_layer_weights[y])
     for i in range (self._n_subclass):
       if res[i] == 0:
@@ -345,7 +442,18 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     return res
 
   def pca_weights_init(self, data):
-    """Initializes the weights of the competitive layers using Principal Component Analysis technique"""
+    """Initializes the weights of the competitive layers using Principal Component Analysis technique.
+    
+    Parameters
+    ----------
+    data : 2D numpy array, shape (n_samples, n_features)
+      Data vectors, where n_samples is the number of samples and n_features is the number of features.
+
+    Returns
+    -------
+    self : object
+      Returns self.
+    """
     if len(data.shape) != 2:
       raise Exception("Data is expected to be 2D array")
     elif data.shape[1] != self._n_feature:
@@ -388,8 +496,27 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
         norm = fast_norm(self._competitive_layer_weights[i])
         self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
 
+    return self
+
   def update(self, x, epoch, y = None):
-    """Updates the weights of competitive layer and biasees value"""
+    """Updates the weights of competitive layer and biasees value.
+    
+    Parameters
+    ----------
+    x : 1D numpy array shape (n_features,)
+      Input vector where n_features is the number of features.
+
+    y : int
+      Class to which input vector is relative. If y is not given, weights of competitive layer will be updated unsupervised.
+
+    epoch : int
+      Sequence number of epoch iterations, after each iterations, learning rate and sigma will be recalculated.
+
+    Returns
+    -------
+    self : object
+      Returns self.
+    """
     win = self.winner(x)
     win_idx = argmax(win)
     self._biases = self._bias_function(self._biases, win_idx)
@@ -409,10 +536,13 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
         norm = fast_norm(self._competitive_layer_weights[i])
         self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
 
+    return self
+
   def visualize(self, figure_path = None):
-    """
-    Visualizing the competitive layer
+    """Visualizing the competitive layer.
     
+    Parameters
+    ----------
     figure_path: str
       The path of file to save figure, if there is no path provided, figure will be shown
     """
@@ -481,56 +611,55 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
       plt.show()
 
 class AdaptiveLVQ(LvqNetworkWithNeighborhood):
+  """Learning Vector Quantization with flexible competitive layer.
+
+  Parameters
+  ----------
+  
+  n_feature : int
+    Number of features of the dataset.
+
+  n_rows : int
+    Number of rows in the competitive layer.
+
+  n_cols : int
+    Number of columns in the competitive layer.
+
+  n_class : int
+    Number of classes of the dataset.
+
+  learning_rate : float, default: 0.5
+    Learning rate of the algorithm.
+
+  learning_rate_decay_function : function, default: None
+    Function that decreases learning rate after number of iterations.
+  
+  decay_rate : float, default: 1
+    Reduction rate of learning rate after number of iterations.
+  
+  bias_function : function, default: None
+    Function that updates biases value of neurons in the competitive layer.
+
+  weights_normalization : option ["length"], default: None
+    Normalizing weights of neuron.
+
+  sigma : float
+    Radius of neighborhood around winner neuron in the competitive layer.
+
+  sigma_decay_function : function, default: None
+    Function that decreases sigma after number of iterations.
+
+  sigma_decay_rate : float, default: 1
+    Reduction rate of sigma after number of iterations.
+
+  neighborhood : option ["bubble", "gaussian"], default: None
+    Function that determines coefficient for neighbors of winner neuron in competitive layer.
+  """
   def __init__(self, n_feature, n_rows, n_cols, n_class,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
               bias_function = None, weights_normalization = None,
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
               neighborhood = None):
-    """
-    Initializing a Learning Vector Quantization with flexible competitive layer
-
-    Parameters:
-    
-    n_feature: int
-      Number of features of the dataset
-
-    n_rows: int
-      Number of rows in the competitive layer
-
-    n_cols: int
-      Number of columns in the competitive layer
-
-    n_class: int
-      Number of classes of the dataset
-
-    learning_rate: float, default = 0.5
-      Learning rate of the algorithm
-
-    learning_rate_decay_function: function, default = None
-      Function that decreases learning rate after number of iterations
-    
-    decay_rate: float, default = 1
-      Reduction rate of learning rate after number of iterations
-    
-    bias_function: function, default = None
-      Function that updates biases value of neurons in the competitive layer
-
-    weights_normalization: option ["length"], default = None
-      Normalizing weights of neuron
-
-    sigma: float
-      Radius of neighborhood around winner neuron in the competitive layer
-
-    sigma_decay_function:
-      Function that decreases sigma after number of iterations
-
-    sigma_decay_rate: float, default = 1
-      Reduction rate of sigma after number of iterations
-
-    neighborhood: option ["bubble", "gaussian"], default = None
-      Function that determines coefficient for neighbors of winner neuron in competitive layer
-    """
-
     super().__init__(n_feature, n_rows, n_cols, n_class,
                     learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
                     bias_function = None, weights_normalization = None,
@@ -539,8 +668,26 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     self._linear_layer_weights = zeros((n_class, n_rows * n_cols))
 
   def train_competitive(self, X, num_iteration, epoch_size):
-    """
-    Fitting the weights of the neurons in the competitive layer before labeling class for each neurons
+    """Fitting the weights of the neurons in the competitive layer before labeling class for each neurons.
+
+    Parameters
+    ----------
+    X : 2D numpy array, shape (n_samples, n_features)
+      Training vectors, where n_samples is the number of samples and n_features is the number of features.
+    
+    y : 1D numpy array, shape (n_samples,)
+      Target vector relative to X.
+    
+    num_iteration : int
+      Number of iterations.
+
+    epoch_size : int
+      Size of chunk of data, after each chunk of data, parameter such as learning rate and sigma will be recalculated.
+
+    Returns
+    -------
+    self : object
+      Returns self.
     """
     iteration = 0
     while iteration < num_iteration:
@@ -548,10 +695,23 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       epoch = iteration // epoch_size
       self.update(x = X[idx], epoch = epoch)
       iteration += 1
+    return self
 
   def label_neurons(self, X, y):
-    """
-    Labeling class for each neurons in the competitve layer according to the most used class
+    """Labeling class for each neurons in the competitve layer according to the most used class.
+
+    Parameters
+    ----------
+    X : 2D numpy array, shape (n_samples, n_features)
+      Training vectors, where n_samples is the number of samples and n_features is the number of features.
+    
+    y : 1D numpy array, shape (n_samples,)
+      Target vector relative to X.
+
+    Returns
+    -------
+    self : object
+      Returns self.
     """
     self._number_of_neurons_each_classes = zeros(self._n_class)
     class_win = zeros((self._n_subclass, self._n_class))
@@ -567,27 +727,35 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       self._number_of_neurons_each_classes[class_name] += 1
       self._linear_layer_weights[class_name][idx] = 1
 
+    return self
+
   def fit(self, X, y, first_num_iteration, first_epoch_size, second_num_iteration, second_epoch_size):
-    """
-    Training the network using vectors in data sequentially
+    """Training the network using vectors in data sequentially.
 
-    X: 2D numpy array
-      Matrix of input vectors
+    Parameters
+    ----------
+    X : 2D numpy array, shape (n_samples, n_features)
+      Training vectors, where n_samples is the number of samples and n_features is the number of features.
+    
+    y : 1D numpy array, shape (n_samples,)
+      Target vector relative to X.
 
-    y: 1D numpy array
-      Class corresponding to input vectors
+    first_num_iteration : int
+      Number of iterations of the first phase of training.
 
-    first_num_iteration: int
-      Number of iterations of the first phase of training
+    first_epoch_size : int
+      Size of chunk of data for the first phase of training.
 
-    first_epoch_size: int
-      Size of chunk of data for the first phase of training
+    second_num_iteration : int
+      Number of iterations of the second phase of training.
 
-    second_num_iteration: int
-      Number of iterations of the second phase of training
+    second_epoch_size : int
+      Size of chunk of data for the second phase of training.
 
-    second_epoch_size: int
-      Size of chunk of data for the second phase of training
+    Returns
+    -------
+    self : object
+      Returns self.
     """
     if len(X.shape) <= 1:
       raise Exception("Data is expected to be 2D array")
@@ -601,3 +769,5 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     self.label_neurons(X, y)
     # Phase 2: Training using LVQ concept
     self.train_batch(X, y, second_num_iteration, second_epoch_size)
+
+    return self

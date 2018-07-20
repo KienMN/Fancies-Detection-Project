@@ -32,7 +32,7 @@ lvq.sample_weights_init(X_train)
 lvq.fit(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
 
 # Predict the result
-y_pred = lvq.predict(X_test)
+y_pred, confidence_score = lvq.predict(X_test, confidence = 1)
 
 for i in range (len(y_pred)):
   print("y_pred:", y_pred[i], "y_true:", y_test[i], "confidence:", confidence_score[i])
