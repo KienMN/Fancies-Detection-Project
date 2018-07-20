@@ -1,6 +1,6 @@
 from math import exp
 import numpy as np
-from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin, argsort
+from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin, argsort, unique
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder
 from .utils import fast_norm, compet, euclidean_distance, default_bias_function, default_learning_rate_decay_function, default_radius_decay_function
@@ -10,15 +10,9 @@ class LvqNetwork(object):
 
   Parameters
   ----------
-  
-  n_feature : int
-    Number of features of the dataset.
 
   n_subclass : int
     Number of subclasses in the competitive layer.
-
-  n_class : int
-    Number of classes of the dataset.
 
   learning_rate : float, default: 0.5
     Learning rate of the algorithm.
@@ -32,19 +26,18 @@ class LvqNetwork(object):
   bias_function : function, default: None
     Function that updates biases value of neurons in competitive layer.
 
-  weights_normalization : option ["length"], default: None
+  weights_normalization : option ['length'], default: None
     Normalizing weights of neuron.
+
+  weights_init : option ['sample', 'random'], default: random
+    Weights initialization strategy, if weights_init is not given or wrongly given, weights will be initializaed randomly.
   """
 
-  def __init__(self, n_feature, n_subclass, n_class,
+  def __init__(self, n_subclass,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias_function = None, weights_normalization = None):
-    if n_subclass < n_class:
-      raise Exception("The number of subclasses must be more than or equal to the number of classes")
-
-    self._n_feature = n_feature
+              bias_function = None, weights_normalization = None, weights_init = None):
+    
     self._n_subclass = n_subclass
-    self._n_class = n_class
     self._learning_rate = learning_rate
     self._decay_rate = decay_rate
 
@@ -63,33 +56,20 @@ class LvqNetwork(object):
     else:
       self._weights_normalization = "default"
 
-    # Initializing competitive layer weights
-    self._competitive_layer_weights = random.RandomState().rand(n_subclass, n_feature)
-    # Normalizing competitive layer weights
-    for i in range (n_subclass):
-      if self._weights_normalization == "length":
-        norm = fast_norm(self._competitive_layer_weights[i])
-        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
+    # Weights initialization strategy
+    self._weights_init = weights_init
 
     # Initializing biases value corresponding to competitive layer
     self._biases = zeros((n_subclass))
 
     # Initializing winner neurons counter
     self._winner_count = zeros((n_subclass))
-
-    # Initializing linear layer weights
-    self._linear_layer_weights = zeros((n_class, n_subclass))
-    n_subclass_per_class = n_subclass // n_class
-    for i in range (n_class):
-      if i != n_class - 1:
-        for j in range (i * n_subclass_per_class, (i + 1) * n_subclass_per_class):
-          self._linear_layer_weights[i][j] = 1
-      else:
-        for j in range (i * n_subclass_per_class, n_subclass):
-          self._linear_layer_weights[i][j] = 1
     
     # Label encoder
     self._label_encoder = LabelEncoder()
+
+  def pca_weights_init(self, *args, **kwargs):
+    pass
 
   def sample_weights_init(self, data):
     """
@@ -105,10 +85,6 @@ class LvqNetwork(object):
     self : object
       Returns self.
     """
-    if len(data.shape) != 2:
-      raise Exception("Data is expected to be 2D array")
-    elif data.shape[1] != self._n_feature:
-      raise Exception("Data must have the same number of features as the number of features of the model")
     for i in range (self._n_subclass):
       # Initializing the weights, picking random sample from data
       rand_idx = random.random_integers(0, len(data) - 1)
@@ -214,10 +190,39 @@ class LvqNetwork(object):
     """
     if len(X.shape) <= 1:
       raise Exception("Data is expected to be 2D array")
-    elif X.shape[1] != self._n_feature:
-      raise Exception("Data must have the same number of features as the number of features of the model")
+    self._n_feature = X.shape[1]
+
     y = y.astype(np.int8)
     y = self._label_encoder.fit_transform(y)
+    self._n_class = len(unique(y))
+    
+    if self._n_subclass < self._n_class:
+      raise Exception("The number of subclasses must be more than or equal to the number of classes")
+    
+    # Initializing competitive layer weights
+    self._competitive_layer_weights = random.RandomState().rand(self._n_subclass, self._n_feature)
+    # Normalizing competitive layer weights
+    for i in range (self._n_subclass):
+      if self._weights_normalization == "length":
+        norm = fast_norm(self._competitive_layer_weights[i])
+        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
+
+    # Initializing linear layer weights
+    self._linear_layer_weights = zeros((self._n_class, self._n_subclass))
+    n_subclass_per_class = self._n_subclass // self._n_class
+    for i in range (self._n_class):
+      if i != self._n_class - 1:
+        for j in range (i * n_subclass_per_class, (i + 1) * n_subclass_per_class):
+          self._linear_layer_weights[i][j] = 1
+      else:
+        for j in range (i * n_subclass_per_class, self._n_subclass):
+          self._linear_layer_weights[i][j] = 1
+
+    if self._weights_init == 'sample':
+      self.sample_weights_init(X)
+    elif self._weights_init == 'pca':
+      self.pca_weights_init(X)
+
     self.train_batch(X, y, num_iteration, epoch_size)
 
     return self
@@ -327,17 +332,11 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
   Parameters
   ----------
 
-  n_feature : int
-    Number of features of the dataset.
-
   n_rows : int
     Number of rows in the competitive layer.
 
   n_cols : int
     Number of columns in the competitive layer.
-
-  n_class : int
-    Number of classes of the dataset.
 
   learning_rate : float, default: 0.5
     Learning rate of the algorithm.
@@ -354,6 +353,9 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
   weights_normalization : option ["length"], default: None
     Normalizing weights of neuron.
 
+  weights_init : option ['sample', 'random', 'pca'], default: random
+    Weights initialization strategy, if weights_init is not given or wrongly given, weights will be initializaed randomly.
+
   sigma : float
     Radius of neighborhood around winner neuron in the competitive layer.
 
@@ -366,15 +368,16 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
   neighborhood : option ["bubble", "gaussian"], default: None
     Function that determines coefficient for neighbors of winner neuron in competitive layer.
   """
-  def __init__(self, n_feature, n_rows, n_cols, n_class,
+  def __init__(self, n_rows, n_cols,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias_function = None, weights_normalization = None,
+              bias_function = None, weights_normalization = None, weights_init = None,
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
               neighborhood = None):
-    super().__init__(n_feature = n_feature, n_subclass = n_rows * n_cols, n_class = n_class,
+    super().__init__(n_subclass = n_rows * n_cols,
                     learning_rate = learning_rate, learning_rate_decay_function = learning_rate_decay_function,
                     decay_rate = decay_rate,
-                    bias_function = bias_function, weights_normalization = weights_normalization)
+                    bias_function = bias_function, weights_normalization = weights_normalization,
+                    weights_init = weights_init)
     self._n_rows_subclass = n_rows
     self._n_cols_subclass = n_cols
     self._radius = sigma
@@ -454,11 +457,6 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     self : object
       Returns self.
     """
-    if len(data.shape) != 2:
-      raise Exception("Data is expected to be 2D array")
-    elif data.shape[1] != self._n_feature:
-      raise Exception("Data must have the same number of features as the number of features of the model")
-
     self._competitive_layer_weights = zeros((self._n_subclass, self._n_feature))
     pca_number_of_components = None
     coord = None
@@ -640,8 +638,11 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
   bias_function : function, default: None
     Function that updates biases value of neurons in the competitive layer.
 
-  weights_normalization : option ["length"], default: None
+  weights_normalization : option ['length'], default: None
     Normalizing weights of neuron.
+
+  weights_init : option ['sample', 'random', 'pca'], default: random
+    Weights initialization strategy, if weights_init is not given or wrongly given, weights will be initializaed randomly.
 
   sigma : float
     Radius of neighborhood around winner neuron in the competitive layer.
@@ -652,20 +653,25 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
   sigma_decay_rate : float, default: 1
     Reduction rate of sigma after number of iterations.
 
-  neighborhood : option ["bubble", "gaussian"], default: None
+  neighborhood : option ['bubble', 'gaussian'], default: None
     Function that determines coefficient for neighbors of winner neuron in competitive layer.
+
+  label_weight : option ['uniform', 'distance'], default: None
+    Strategy to label class name for neurons in the competitive layer
   """
-  def __init__(self, n_feature, n_rows, n_cols, n_class,
+  def __init__(self, n_rows, n_cols,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias_function = None, weights_normalization = None,
+              bias_function = None, weights_normalization = None, weights_init = None,
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
-              neighborhood = None):
-    super().__init__(n_feature, n_rows, n_cols, n_class,
-                    learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-                    bias_function = None, weights_normalization = None,
-                    sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
-                    neighborhood = None)
-    self._linear_layer_weights = zeros((n_class, n_rows * n_cols))
+              neighborhood = None, label_weight = None):
+    super().__init__(n_rows = n_rows, n_cols = n_cols,
+                    learning_rate = learning_rate, learning_rate_decay_function = learning_rate_decay_function,
+                    decay_rate = decay_rate,
+                    bias_function = bias_function,
+                    weights_normalization = weights_normalization, weights_init = weights_init,
+                    sigma = sigma, sigma_decay_function = sigma_decay_function, sigma_decay_rate = sigma_decay_rate,
+                    neighborhood = neighborhood)
+    self._label_weight = label_weight
 
   def train_competitive(self, X, num_iteration, epoch_size):
     """Fitting the weights of the neurons in the competitive layer before labeling class for each neurons.
@@ -713,19 +719,34 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     self : object
       Returns self.
     """
-    self._number_of_neurons_each_classes = zeros(self._n_class)
-    class_win = zeros((self._n_subclass, self._n_class))
-    m = len(X)
-    for idx in range (m):
-      win = self.winner(X[idx])
-      win_idx = argmax(win)
-      class_win[win_idx][y[idx]] += 1
+    self._n_neurons_each_classes = zeros(self._n_class)
+    self._neurons_confidence = zeros((self._n_subclass, self._n_class))
+    if self._label_weight == 'distance':
+      pass
+    elif self._label_weight == 'uniform':
+      class_win = zeros((self._n_subclass, self._n_class))
+      m = len(X)
+      for idx in range (m):
+        win = self.winner(X[idx])
+        win_idx = argmax(win)
+        class_win[win_idx][y[idx]] += 1
 
-    for idx in range (self._n_subclass):
-      neuron_class_win = argwhere(class_win[idx] == amax(class_win[idx])).ravel()
-      class_name = neuron_class_win[argmin(self._number_of_neurons_each_classes[neuron_class_win])]
-      self._number_of_neurons_each_classes[class_name] += 1
-      self._linear_layer_weights[class_name][idx] = 1
+      for idx in range (self._n_subclass):
+        neuron_class_win = argwhere(class_win[idx] == amax(class_win[idx])).ravel()
+        class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
+        self._n_neurons_each_classes[class_name] += 1
+        self._linear_layer_weights[class_name][idx] = 1
+    else:
+      n_subclass_per_class = self._n_subclass // self._n_class
+      for i in range (self._n_class):
+        if i != self._n_class - 1:
+          for j in range (i * n_subclass_per_class, (i + 1) * n_subclass_per_class):
+            self._linear_layer_weights[i][j] = 1
+            self._n_neurons_each_classes[i] += 1
+        else:
+          for j in range (i * n_subclass_per_class, self._n_subclass):
+            self._linear_layer_weights[i][j] = 1
+            self._n_neurons_each_classes[i] += 1
 
     return self
 
@@ -757,12 +778,33 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     self : object
       Returns self.
     """
+
     if len(X.shape) <= 1:
       raise Exception("Data is expected to be 2D array")
-    elif X.shape[1] != self._n_feature:
-      raise Exception("Data must have the same number of features as the number of features of the model")
+    self._n_feature = X.shape[1]
+
     y = y.astype(np.int8)
     y = self._label_encoder.fit_transform(y)
+    self._n_class = len(unique(y))
+    
+    if self._n_subclass < self._n_class:
+      raise Exception("The number of subclasses must be more than or equal to the number of classes")
+    
+    # Initializing competitive layer weights
+    self._competitive_layer_weights = random.RandomState().rand(self._n_subclass, self._n_feature)
+    # Normalizing competitive layer weights
+    for i in range (self._n_subclass):
+      if self._weights_normalization == "length":
+        norm = fast_norm(self._competitive_layer_weights[i])
+        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
+
+    # Initializing linear layer weights
+    self._linear_layer_weights = zeros((self._n_class, self._n_subclass))
+
+    if self._weights_init == 'sample':
+      self.sample_weights_init(X)
+    elif self._weights_init == 'pca':
+      self.pca_weights_init(X)
     
     # Phase 1: Training using SOM concept
     self.train_competitive(X, first_num_iteration, first_epoch_size)

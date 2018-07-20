@@ -27,8 +27,8 @@ X_test = sc.transform(X_test)
 
 # Training the LVQ
 from detection.competitive_learning_network import LvqNetwork
-lvq = LvqNetwork(n_feature = 6, n_subclass = 100, n_class = 4, learning_rate = 0.5, decay_rate = 1, weights_normalization="length")
-lvq.sample_weights_init(X_train)
+lvq = LvqNetwork(n_subclass = 100, learning_rate = 0.5, decay_rate = 1, weights_normalization="length", weights_init = "pca")
+# lvq.sample_weights_init(X_train)
 lvq.fit(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
 
 # Predict the result

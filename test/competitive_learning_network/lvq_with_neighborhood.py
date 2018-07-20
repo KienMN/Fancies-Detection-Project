@@ -21,18 +21,19 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, rand
 
 # Feature scaling
 from sklearn.preprocessing import MinMaxScaler
-sc = MinMaxScaler(feature_range = (0, 1))
+sc = MinMaxScaler(feature_range = (-1, 1))
 X_train = sc.fit_transform(X_train)
 X_test = sc.transform(X_test)
 
 # Training the LVQ
 from detection.competitive_learning_network import LvqNetworkWithNeighborhood
-lvq = LvqNetworkWithNeighborhood(n_feature = 6, n_rows = 10, n_cols = 10, n_class = 4,
+lvq = LvqNetworkWithNeighborhood(n_rows = 10, n_cols = 10,
                                 learning_rate = 0.5, decay_rate = 1,
                                 sigma = 2, sigma_decay_rate = 1,
                                 # weights_normalization = "length",
+                                weights_init = 'pca',
                                 neighborhood="bubble")
-lvq.sample_weights_init(X_train)
+# lvq.sample_weights_init(X_train)
 # lvq.pca_weights_init(X_train)
 lvq.fit(X_train, y_train, num_iteration = 5000, epoch_size = 100)
 
