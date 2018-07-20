@@ -1,6 +1,6 @@
 from math import exp
 import numpy as np
-from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin, argsort, unique
+from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin, argsort, unique, sum
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder
 from .utils import fast_norm, compet, euclidean_distance, default_bias_function, default_learning_rate_decay_function, default_radius_decay_function
@@ -306,7 +306,7 @@ class LvqNetwork(object):
           if classes[neighbors[j]] == y_i:
             a = a + exp(-(distances[neighbors[j]] ** 2))
           b = b + exp(-(distances[neighbors[j]] ** 2))
-        confidence_score = append(confidence_score, a / b)  
+        confidence_score = append(confidence_score, a / b)
 
     y_pred = self._label_encoder.inverse_transform(y_pred)
     
@@ -704,7 +704,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     return self
 
   def label_neurons(self, X, y):
-    """Labeling class for each neurons in the competitve layer according to the most used class.
+    """Labeling class and computing confidence for each neurons in the competitve layer according to input data.
 
     Parameters
     ----------
@@ -722,7 +722,24 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     self._n_neurons_each_classes = zeros(self._n_class)
     self._neurons_confidence = zeros((self._n_subclass, self._n_class))
     if self._label_weight == 'distance':
-      pass
+      neurons_weight = zeros((self._n_subclass, self._n_class))
+      m = len(X)
+      k = 10
+      for i in range (self._n_subclass):
+        n = self._competitive_layer_weights[i]
+        distances = array([])
+        for j in range (m):
+          distance = euclidean_distance(n, X[j]) - self._biases[i]
+          distances = append(distances, distance)
+        neighbors = argsort(distances)
+        for j in range (k):
+          neurons_weight[i][y[neighbors[j]]] += exp(-(distances[neighbors[j]] ** 2))
+        
+        self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
+        neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
+        class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
+        self._n_neurons_each_classes[class_name] += 1
+        self._linear_layer_weights[class_name][i] = 1
     elif self._label_weight == 'uniform':
       class_win = zeros((self._n_subclass, self._n_class))
       m = len(X)
@@ -730,12 +747,15 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         win = self.winner(X[idx])
         win_idx = argmax(win)
         class_win[win_idx][y[idx]] += 1
-
       for idx in range (self._n_subclass):
         neuron_class_win = argwhere(class_win[idx] == amax(class_win[idx])).ravel()
         class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
         self._n_neurons_each_classes[class_name] += 1
         self._linear_layer_weights[class_name][idx] = 1
+        if sum(class_win[idx]) == 0:
+          self._neurons_confidence[idx] = [1 / self._n_class] * self._n_class
+        else:
+          self._neurons_confidence[idx] = class_win[idx] / sum(class_win[idx])
     else:
       n_subclass_per_class = self._n_subclass // self._n_class
       for i in range (self._n_class):
@@ -743,10 +763,12 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
           for j in range (i * n_subclass_per_class, (i + 1) * n_subclass_per_class):
             self._linear_layer_weights[i][j] = 1
             self._n_neurons_each_classes[i] += 1
+            self._neurons_confidence[j] = [1 / self._n_class] * self._n_class
         else:
           for j in range (i * n_subclass_per_class, self._n_subclass):
             self._linear_layer_weights[i][j] = 1
             self._n_neurons_each_classes[i] += 1
+            self._neurons_confidence[j] = [1 / self._n_class] * self._n_class
 
     return self
 

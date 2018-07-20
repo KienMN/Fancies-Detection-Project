@@ -27,12 +27,12 @@ X_test = sc.transform(X_test)
 
 # Training the LVQ
 from detection.competitive_learning_network import AdaptiveLVQ
-lvq = AdaptiveLVQ(n_rows = 8, n_cols = 8,
+lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
                   learning_rate = 0.5, decay_rate = 1,
                   sigma = 1, sigma_decay_rate = 1,
                   # weights_normalization = "length",
                   weights_init = 'pca',
-                  neighborhood='gaussian', label_weight = 'uniform')
+                  neighborhood='gaussian', label_weight = 'distance')
 # lvq.sample_weights_init(X_train)
 # lvq.pca_weights_init(X_train)
 lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 100, second_num_iteration = 4000, second_epoch_size = 100)
@@ -50,5 +50,6 @@ print((cm[0][0] + cm[1][1] + cm[2][2] + cm[3][3]) / np.sum(cm))
 
 # Visualization
 # lvq.details()
+lvq.visualize()
+# print(lvq._neurons_confidence)
 print(lvq._n_neurons_each_classes)
-# lvq.visualize()
