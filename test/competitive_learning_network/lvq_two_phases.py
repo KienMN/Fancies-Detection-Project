@@ -19,12 +19,6 @@ y = dataset.iloc[:, -1].values.astype(np.int8)
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
 
-# Feature scaling
-from sklearn.preprocessing import MinMaxScaler
-sc = MinMaxScaler(feature_range = (-1, 1))
-X_train = sc.fit_transform(X_train)
-X_test = sc.transform(X_test)
-
 # Training the LVQ
 from detection.competitive_learning_network import AdaptiveLVQ
 lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,

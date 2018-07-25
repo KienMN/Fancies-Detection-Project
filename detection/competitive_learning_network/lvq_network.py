@@ -2,7 +2,7 @@ from math import exp
 import numpy as np
 from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin, argsort, unique, sum
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from .utils import fast_norm, compet, euclidean_distance, default_bias_function
 from .utils import default_learning_rate_decay_function, default_radius_decay_function, default_non_bias_function
 
@@ -73,6 +73,7 @@ class LvqNetwork(object):
     self._winner_count = zeros((n_subclass))
     
     # Label encoder
+    self._scaler = MinMaxScaler(feature_range = (-1, 1))
     self._label_encoder = LabelEncoder()
 
   def pca_weights_init(self, *args, **kwargs):
@@ -199,6 +200,7 @@ class LvqNetwork(object):
       raise Exception("Data is expected to be 2D array")
     self._n_feature = X.shape[1]
 
+    X = self._scaler.fit_transform(X)
     y = y.astype(np.int8)
     y = self._label_encoder.fit_transform(y)
     self._n_class = len(unique(y))
@@ -284,6 +286,7 @@ class LvqNetwork(object):
     confidence_score : 1D numpy array, shape (n_samples,)
       If confidence is true, returns confidence scores of prediction made.
     """
+    X = self._scaler.transform(X)
     y_pred = array([]).astype(np.int8)
     confidence_score = array([])
     k = self._n_subclass // 20
@@ -836,7 +839,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     if len(X.shape) <= 1:
       raise Exception("Data is expected to be 2D array")
     self._n_feature = X.shape[1]
-
+    X = self._scaler.fit_transform(X)
     y = y.astype(np.int8)
     y = self._label_encoder.fit_transform(y)
     self._n_class = len(unique(y))
@@ -888,6 +891,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     confidence_score : 1D numpy array, shape (n_samples,)
       If confidence is true, returns confidence scores of prediction made.
     """
+    X = self._scaler.transform(X)
     y_pred = array([]).astype(np.int8)
     confidence_score = array([])
     n_sample = len(X)
