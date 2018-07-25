@@ -3,7 +3,8 @@ import numpy as np
 from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin, argsort, unique, sum
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder
-from .utils import fast_norm, compet, euclidean_distance, default_bias_function, default_learning_rate_decay_function, default_radius_decay_function
+from .utils import fast_norm, compet, euclidean_distance, default_bias_function
+from .utils import default_learning_rate_decay_function, default_radius_decay_function, default_non_bias_function
 
 class LvqNetwork(object):
   """Learning Vector Quantization.
@@ -23,6 +24,9 @@ class LvqNetwork(object):
   decay_rate : float, default: 1
     Reduction rate of learning rate after number of iterations.
   
+  bias : bool, default: 1
+    Conscience which prevents a neuron win too many times.
+
   bias_function : function, default: None
     Function that updates biases value of neurons in competitive layer.
 
@@ -35,7 +39,7 @@ class LvqNetwork(object):
 
   def __init__(self, n_subclass,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias_function = None, weights_normalization = None, weights_init = None):
+              bias = True, bias_function = None, weights_normalization = None, weights_init = None):
     
     self._n_subclass = n_subclass
     self._learning_rate = learning_rate
@@ -46,10 +50,13 @@ class LvqNetwork(object):
     else:
       self._learning_rate_decay_function = default_learning_rate_decay_function
     
-    if bias_function:
-      self._bias_function = bias_function
+    if bias:
+      if bias_function:
+        self._bias_function = bias_function
+      else:
+        self._bias_function = default_bias_function
     else:
-      self._bias_function = default_bias_function
+      self._bias_function = default_non_bias_function
 
     if weights_normalization == "length":
       self._weights_normalization = weights_normalization
@@ -275,7 +282,7 @@ class LvqNetwork(object):
       Prediction target vector relative to X.
 
     confidence_score : 1D numpy array, shape (n_samples,)
-      If confidence is true, returns confidence scores of prediction has been made.
+      If confidence is true, returns confidence scores of prediction made.
     """
     y_pred = array([]).astype(np.int8)
     confidence_score = array([])
@@ -347,6 +354,9 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
   decay_rate : float, default: 1
     Reduction rate of learning rate after number of iterations.
   
+  bias : bool, default: 1
+    Conscience which prevents a neuron win too many times.
+
   bias_function : function, default: None
     Function that updates biases value of neurons in the competitive layer.
 
@@ -370,13 +380,13 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
   """
   def __init__(self, n_rows, n_cols,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias_function = None, weights_normalization = None, weights_init = None,
+              bias = True, bias_function = None, weights_normalization = None, weights_init = None,
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
               neighborhood = None):
     super().__init__(n_subclass = n_rows * n_cols,
                     learning_rate = learning_rate, learning_rate_decay_function = learning_rate_decay_function,
                     decay_rate = decay_rate,
-                    bias_function = bias_function, weights_normalization = weights_normalization,
+                    bias = bias, bias_function = bias_function, weights_normalization = weights_normalization,
                     weights_init = weights_init)
     self._n_rows_subclass = n_rows
     self._n_cols_subclass = n_cols
@@ -635,6 +645,9 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
   decay_rate : float, default: 1
     Reduction rate of learning rate after number of iterations.
   
+  bias : bool, default: 1
+    Conscience which prevents a neuron win too many times.
+
   bias_function : function, default: None
     Function that updates biases value of neurons in the competitive layer.
 
@@ -656,18 +669,18 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
   neighborhood : option ['bubble', 'gaussian'], default: None
     Function that determines coefficient for neighbors of winner neuron in competitive layer.
 
-  label_weight : option ['uniform', 'distance'], default: None
+  label_weight : option ['uniform', 'exponential_distance', 'inverse_distance'], default: None
     Strategy to label class name for neurons in the competitive layer
   """
   def __init__(self, n_rows, n_cols,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias_function = None, weights_normalization = None, weights_init = None,
+              bias = True, bias_function = None, weights_normalization = None, weights_init = None,
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
               neighborhood = None, label_weight = None):
     super().__init__(n_rows = n_rows, n_cols = n_cols,
                     learning_rate = learning_rate, learning_rate_decay_function = learning_rate_decay_function,
                     decay_rate = decay_rate,
-                    bias_function = bias_function,
+                    bias = bias, bias_function = bias_function,
                     weights_normalization = weights_normalization, weights_init = weights_init,
                     sigma = sigma, sigma_decay_function = sigma_decay_function, sigma_decay_rate = sigma_decay_rate,
                     neighborhood = neighborhood)
@@ -721,7 +734,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     """
     self._n_neurons_each_classes = zeros(self._n_class)
     self._neurons_confidence = zeros((self._n_subclass, self._n_class))
-    if self._label_weight == 'distance':
+    if self._label_weight == 'exponential_distance':
       neurons_weight = zeros((self._n_subclass, self._n_class))
       m = len(X)
       k = 10
@@ -734,6 +747,25 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         neighbors = argsort(distances)
         for j in range (k):
           neurons_weight[i][y[neighbors[j]]] += exp(-(distances[neighbors[j]] ** 2))
+        
+        self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
+        neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
+        class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
+        self._n_neurons_each_classes[class_name] += 1
+        self._linear_layer_weights[class_name][i] = 1
+    elif self._label_weight == 'inverse_distance':
+      neurons_weight = zeros((self._n_subclass, self._n_class))
+      m = len(X)
+      k = 10
+      for i in range (self._n_subclass):
+        n = self._competitive_layer_weights[i]
+        distances = array([])
+        for j in range (m):
+          distance = euclidean_distance(n, X[j]) - self._biases[i]
+          distances = append(distances, distance)
+        neighbors = argsort(distances)
+        for j in range (k):
+          neurons_weight[i][y[neighbors[j]]] += 1 / distances[neighbors[j]]
         
         self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
         neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
@@ -835,3 +867,44 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     self.train_batch(X, y, second_num_iteration, second_epoch_size)
 
     return self
+
+  def predict(self, X, confidence = False):
+    """Predicting the class according to input vectors.
+
+    Parameters
+    ----------
+
+    X : 2D numpy array, shape (n_samples, n_features)
+      Data vectors, where n_samples is the number of samples and n_features is the number of features.
+
+    confidence : bool, default: False
+      Computes and returns confidence score if confidence is true.
+
+    Returns
+    -------
+    y_pred : 1D numpy array, shape (n_samples,)
+      Prediction target vector relative to X.
+
+    confidence_score : 1D numpy array, shape (n_samples,)
+      If confidence is true, returns confidence scores of prediction made.
+    """
+    y_pred = array([]).astype(np.int8)
+    confidence_score = array([])
+    n_sample = len(X)
+    for i in range (n_sample):
+      x = X[i]
+      win = self.winner(x)
+      win_idx = argmax(win)
+      y_i = int(self.classify(win))
+      y_pred = append(y_pred, y_i)
+
+      # Computing confidence score
+      if confidence:
+        confidence_score = append(confidence_score, self._neurons_confidence[win_idx, y_i])
+    
+    y_pred = self._label_encoder.inverse_transform(y_pred)
+    
+    if confidence:
+      return y_pred, confidence_score
+    else:
+      return y_pred
