@@ -5,6 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from .utils import fast_norm, compet, euclidean_distance, default_bias_function
 from .utils import default_learning_rate_decay_function, default_radius_decay_function, default_non_bias_function
+from .utils import split_data
 
 class LvqNetwork(object):
   """Learning Vector Quantization.

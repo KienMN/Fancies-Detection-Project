@@ -1,5 +1,7 @@
 from math import sqrt
 from numpy import dot, argmax, zeros
+import numpy as np
+from random import sample
 
 def fast_norm(x):
   """
@@ -40,3 +42,26 @@ def default_learning_rate_decay_function(learning_rate, iteration, decay_rate):
 
 def default_radius_decay_function(sigma, iteration, decay_rate):
   return sigma / (1 + decay_rate * iteration)
+
+def split_data(data, val_size=0.2, proportional=True):
+
+  if val_size == 0:
+    return data, data[:0]
+
+  if proportional:
+    y = data[:,-1]
+    sort_idx = np.argsort(y)
+    val, start_idx= np.unique(y[sort_idx], return_index=True)
+    indices = np.split(sort_idx, start_idx[1:])
+    val_indices = []
+
+    for idx_list in indices:
+      n = len(idx_list)
+      val_indices += idx_list[(sample(range(n), round(n*val_size)))].tolist()
+
+    val_indices = sorted(val_indices)
+  else:
+    n = len(data)
+    val_indices = sorted(sample(range(n), round(n*val_size)))
+
+  return np.delete(data, val_indices, axis=0), data[val_indices]
