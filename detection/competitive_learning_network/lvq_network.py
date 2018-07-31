@@ -5,7 +5,10 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from .utils import fast_norm, compet, euclidean_distance, default_bias_function
 from .utils import default_learning_rate_decay_function, default_radius_decay_function, default_non_bias_function
-from .utils import split_data
+from .utils import limit_range
+
+feature_range = (-1, 1)
+visual_feature_range = (0, 1)
 
 class LvqNetwork(object):
   """Learning Vector Quantization.
@@ -65,7 +68,10 @@ class LvqNetwork(object):
       self._weights_normalization = "default"
 
     # Weights initialization strategy
-    self._weights_init = weights_init
+    if weights_init == 'pca' or weights_init == 'sample':
+      self._weights_init = weights_init
+    else:
+      self._weights_init = 'random'
 
     # Initializing biases value corresponding to competitive layer
     self._biases = zeros((n_subclass))
@@ -74,7 +80,7 @@ class LvqNetwork(object):
     self._winner_count = zeros((n_subclass))
     
     # Label encoder
-    self._scaler = MinMaxScaler(feature_range = (-1, 1))
+    self._scaler = MinMaxScaler(feature_range = feature_range)
     self._label_encoder = LabelEncoder()
 
   def pca_weights_init(self, *args, **kwargs):
@@ -170,6 +176,12 @@ class LvqNetwork(object):
       self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] + alpha * (x - self._competitive_layer_weights[win_idx])
     else:
       self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] - alpha * (x - self._competitive_layer_weights[win_idx])
+    # Limiting range of weights
+    if self._weights_init == 'random':
+      self._competitive_layer_weights[win_idx] = limit_range(self._competitive_layer_weights[win_idx])
+    else:
+      self._competitive_layer_weights[win_idx] = limit_range(self._competitive_layer_weights[win_idx], feature_range = feature_range)
+
     # Normalizing the weights
     if self._weights_normalization == "length":
       norm = fast_norm(self._competitive_layer_weights[win_idx])
@@ -211,6 +223,7 @@ class LvqNetwork(object):
     
     # Initializing competitive layer weights
     self._competitive_layer_weights = random.RandomState().rand(self._n_subclass, self._n_feature)
+    
     # Normalizing competitive layer weights
     for i in range (self._n_subclass):
       if self._weights_normalization == "length":
@@ -543,6 +556,12 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
       is_class = ones(self._n_subclass)
     for i in range(self._n_subclass):
       self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * alpha * correlation[i] * (x - self._competitive_layer_weights[i])
+      # Limiting the weights
+      if self._weights_init == 'random':
+        self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i])
+      else:
+        self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i], feature_range = feature_range)
+      
       # Normalizing the weights
       if self._weights_normalization == "length":
         norm = fast_norm(self._competitive_layer_weights[i])
@@ -560,7 +579,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     """
     # Rescaling weights to (0, 1) range
     from sklearn.preprocessing import MinMaxScaler
-    sc_weights = MinMaxScaler(feature_range=(0, 1))
+    sc_weights = MinMaxScaler(feature_range = visual_feature_range)
     weights = np.copy(self._competitive_layer_weights)
     weights = sc_weights.fit_transform(weights)
 
@@ -587,7 +606,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     from matplotlib import pyplot as plt
     fig = plt.figure(figsize = (8, 8))
     global_ax = fig.add_axes([0, 0, 1, 1])
-    global_ax.pcolormesh(meshgrid, edgecolors = 'black', linewidth = 0.1, alpha = 0.3)
+    global_ax.pcolormesh(meshgrid, edgecolors = 'black', linewidth = 0.1, alpha = 0.4)
     global_ax.set_yticklabels([])
     global_ax.set_xticklabels([])
 

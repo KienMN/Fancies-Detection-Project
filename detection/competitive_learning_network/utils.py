@@ -65,3 +65,8 @@ def split_data(data, val_size=0.2, proportional=True):
     val_indices = sorted(sample(range(n), round(n*val_size)))
 
   return np.delete(data, val_indices, axis=0), data[val_indices]
+
+def limit_range(x, feature_range = (0, 1)):
+  x[np.where(x > feature_range[1])] = feature_range[1]
+  x[np.where(x < feature_range[0])] = feature_range[0]
+  return x
