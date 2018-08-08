@@ -27,7 +27,7 @@ lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
                   # weights_normalization = "length",
                   bias = True, weights_init = 'pca',
                   neighborhood='gaussian', label_weight = 'exponential_distance')
-lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = len(X_train), second_num_iteration = 4000, second_epoch_size = len(X_train))
+lvq.fit(X_train, y_train, first_num_iteration = 4, first_epoch_size = len(X_train), second_num_iteration = 4, second_epoch_size = len(X_train))
 
 # Predict the result
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1)
@@ -41,6 +41,15 @@ print(cm)
 print((cm[0][0] + cm[1][1] + cm[2][2] + cm[3][3]) / np.sum(cm))
 
 # Visualization
-lvq.details()
-lvq.visualize('/Users/kienmaingoc/Desktop/som_test1.png')
+# lvq.details()
+from sklearn.preprocessing import MinMaxScaler
+sc = MinMaxScaler(feature_range=(0, 1))
+# lvq.visualize('/Users/kienmaingoc/Desktop/som_test1.png')
 # lvq.visualize()
+from detection.competitive_learning_network.visualization import network_mapping, feature_distribution
+
+feature_distribution(9, 9, lvq._competitive_layer_weights, figure_path = '/Users/kienmaingoc/Desktop/som_test4.png')
+
+network_mapping(9, 9, 4, lvq._competitive_layer_weights, lvq._linear_layer_weights, 
+                lvq._label_encoder.inverse_transform(np.arange(0, 4, 1)),
+                figure_path = '/Users/kienmaingoc/Desktop/som_test3.png')

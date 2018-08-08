@@ -285,7 +285,6 @@ class LvqNetwork(object):
 
     Parameters
     ----------
-
     X : 2D numpy array, shape (n_samples, n_features)
       Data vectors, where n_samples is the number of samples and n_features is the number of features.
 
@@ -338,6 +337,29 @@ class LvqNetwork(object):
       return y_pred, confidence_score
     else:
       return y_pred
+
+  def quantization_error(self, X):
+    """Determining quantization error of the network.
+
+    Parameters
+    ----------
+    X : 2D numpy array, shape (n_samples, n_features)
+      Data vectors, where n_samples is the number of samples and n_features is the number of features.
+
+    Returns
+    -------
+    error : float
+      Quantization error of the network.
+    """
+    
+    n = len(X)
+    error = 0
+    for i in range (n):
+      x = X[i]
+      win = self.winner(x)
+      win_idx = argmax(win)
+      error += euclidean_distance(x, self._competitive_layer_weights[win_idx])
+    return error / n
 
   def details(self):
     """Prints parameters of lvq"""
@@ -568,78 +590,6 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
         self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
 
     return self
-
-  def visualize(self, figure_path = None):
-    """Visualizing the competitive layer.
-    
-    Parameters
-    ----------
-    figure_path: str
-      The path of file to save figure, if there is no path provided, figure will be shown
-    """
-    # Rescaling weights to (0, 1) range
-    from sklearn.preprocessing import MinMaxScaler
-    sc_weights = MinMaxScaler(feature_range = visual_feature_range)
-    weights = np.copy(self._competitive_layer_weights)
-    weights = sc_weights.fit_transform(weights)
-
-    # Parameters
-    n_subclass = self._n_subclass
-    n_class = self._n_class
-    n_rows = self._n_rows_subclass
-    n_cols = self._n_cols_subclass
-    n_feature = self._n_feature
-
-    # Meshgrid of the layer
-    meshgrid = np.zeros((n_rows, n_cols))
-    for idx in range (n_subclass):
-      i = n_rows - 1 - (idx // n_cols)
-      j = idx % n_cols
-      for c in range (n_class):
-        if self._linear_layer_weights[c][idx] == 1:
-          meshgrid[i][j] = c
-          break
-    meshgrid = meshgrid.astype(np.int8)
-    meshgrid = self._label_encoder.inverse_transform(meshgrid)
-
-    # Drawing meshgrid of the layer
-    from matplotlib import pyplot as plt
-    fig = plt.figure(figsize = (8, 8))
-    global_ax = fig.add_axes([0, 0, 1, 1])
-    global_ax.pcolormesh(meshgrid, edgecolors = 'black', linewidth = 0.1, alpha = 0.4)
-    global_ax.set_yticklabels([])
-    global_ax.set_xticklabels([])
-
-    # Drawing for each subclass of the layer
-    for idx in range (n_subclass):
-      i = n_rows - 1 - (idx // n_cols)
-      j = idx % n_cols
-      cell_width = 1 / n_rows
-      cell_height = 1 / n_cols
-
-      # Name of the class, to which subclass belongs
-      grid_ax = fig.add_axes([j / n_cols, i / n_rows, cell_width, cell_height], polar=False, frameon = False)
-      grid_ax.axis('off')
-      grid_ax.text(0.05, 0.05, int(meshgrid[i][j]))
-      
-      # Pie chart corresponding to weight
-      polar_ax = fig.add_axes([j / n_cols + cell_height * 0.1, i / n_rows + cell_width * 0.1, cell_width * 0.8, cell_height * 0.8], polar=True, frameon = False)
-      polar_ax.axis('off')
-      theta = np.array([])
-      width = np.array([])  
-      for k in range (n_feature):
-        theta = np.append(theta, k * 2 * np.pi / n_feature)
-        width = np.append(width, 2 * np.pi / n_feature)
-      radii = weights[idx]
-      color = ['b', 'g', 'r', 'black', 'm', 'y', 'k', 'w']
-      bars = polar_ax.bar(theta, radii, width=width, bottom=0.0)
-      for k in range (n_feature):
-        bars[k].set_facecolor(color[k])
-        bars[k].set_alpha(1)
-    if figure_path:
-      plt.savefig(figure_path)
-    else:
-      plt.show()
 
 class AdaptiveLVQ(LvqNetworkWithNeighborhood):
   """Learning Vector Quantization with flexible competitive layer.
