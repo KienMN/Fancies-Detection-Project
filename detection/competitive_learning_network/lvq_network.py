@@ -10,6 +10,10 @@ from .utils import limit_range
 feature_range = (-1, 1)
 visual_feature_range = (0, 1)
 
+# Ignoring deprecation warning
+import warnings
+warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
+
 class LvqNetwork(object):
   """Learning Vector Quantization.
 
@@ -875,8 +879,8 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       # Computing confidence score
       if confidence:
         confidence_score = append(confidence_score, self._neurons_confidence[win_idx, y_i])
-    
-    y_pred = self._label_encoder.inverse_transform(y_pred)
+    if (y_pred.size > 0):
+      y_pred = self._label_encoder.inverse_transform(y_pred)
     
     if confidence:
       return y_pred, confidence_score
