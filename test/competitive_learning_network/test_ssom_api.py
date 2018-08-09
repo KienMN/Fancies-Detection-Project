@@ -9,18 +9,21 @@ server_address = "http://127.0.0.1"
 headers = {"content-type": "application/json"}
 
 payload = {}
-payload['model_id'] = "model-2"
+payload['model_id'] = "model-1"
 payload['params'] = {}
-payload['train'] = {}
+payload['dataset'] = {}
 
-payload['params']['n_rows'] = 9
-payload['params']['n_cols'] = 9
-payload['params']['learning_rate'] = 0.5
-payload['params']['decay_rate'] = 1
-payload['params']['neighborhood'] = 'bubble'
-payload['params']['sigma'] = 1
-payload['params']['sigma_decay_rate'] = 1
-payload['params']['weights_initialization'] = "pca"
+payload['params']['size'] = 5
+payload['params']['first_num_iteration'] = 2000
+payload['params']['second_num_iteration'] = 2000
+payload['params']['first_epoch_size'] = 200
+payload['params']['second_epoch_size'] = 200
+# payload['params']['learning_rate'] = 0.5
+# payload['params']['decay_rate'] = 1
+# payload['params']['neighborhood'] = 'bubble'
+# payload['params']['sigma'] = 1
+# payload['params']['sigma_decay_rate'] = 1
+# payload['params']['weights_initialization'] = "pca"
 
 # Importing the dataset
 filepath = os.path.join(os.path.dirname(__file__), 'data/SD-3X_rocktype.csv')
@@ -34,29 +37,27 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, rand
 X_train = X_train.T
 X_test = X_test.T
 
-payload['train']["data"] = X_train.tolist()
-payload['train']["target"] = y_train.tolist()
-payload['params']["num_iteration"] = 10000
-payload['params']["epoch_size"] = len(X)
-
+payload['dataset']['features'] = X_train.tolist()
+payload['dataset']['target'] = y_train.tolist()
 payload = json.dumps(payload)
 
-uri = server_address + ":1234/api/v1.0/lvq/train"
+uri = server_address + ":1234/api/v1/ssom/train"
 re = requests.post(uri, data = payload, headers = headers)
 print(re.text)
 
 payload = {}
-payload["model_id"] = "model-2"
-payload["data"] = X_test.tolist()
+payload['model_id'] = "model-1"
+payload['dataset'] = {}
+payload['dataset']['features'] = X_test.tolist()
 payload = json.dumps(payload)
 
-uri = server_address + ":1234/api/v1.0/lvq/predict"
+uri = server_address + ":1234/api/v1/ssom/predict"
 re = requests.post(uri, data = payload, headers = headers)
-
+print(re.text)
 res = re.json()
 res = json.loads(res)
-print(res.get('message'))
-y_pred = res.get('y_pred')
+
+y_pred = res.get('target')
 
 y_pred = np.array(y_pred)
 
@@ -66,4 +67,4 @@ cm = confusion_matrix(y_test, y_pred)
 
 # Printing the confusion matrix
 print(cm)
-print((cm[0][0] + cm[1][1] + cm[2][2]) / np.sum(cm))
+print((cm[0][0] + cm[1][1] + cm[2][2] + cm[3][3]) / np.sum(cm))

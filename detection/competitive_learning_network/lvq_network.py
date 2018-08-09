@@ -610,9 +610,6 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
   n_cols : int
     Number of columns in the competitive layer.
 
-  n_class : int
-    Number of classes of the dataset.
-
   learning_rate : float, default: 0.5
     Learning rate of the algorithm.
 

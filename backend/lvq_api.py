@@ -1,10 +1,13 @@
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from detection.competitive_learning_network import LvqNetworkWithNeighborhood
 from flask import Flask, jsonify, request
 from flask_restful import Resource, Api, reqparse
-from lvq_network import LvqNetworkWithNeighborhood
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import json
-import os
 
 app = Flask(__name__)
 api = Api(app)
@@ -18,14 +21,7 @@ def after_request(response):
 
 class LVQTrainAPI(Resource):
 
-  # def options (self):
-  #   return {'Allow' : 'POST' }, 200, \
-  #   { 'Access-Control-Allow-Origin': '*', \
-  #     'Access-Control-Allow-Methods' : 'POST,GET',
-  #     'Access-Control-Allow-Headers': 'Content-Type' }
-
   def post(self):
-    
     
     # Request's data
     json_data = request.get_json()
@@ -98,8 +94,7 @@ class LVQTrainAPI(Resource):
     
     # Training the LVQ model
     try:
-      lvq = LvqNetworkWithNeighborhood(n_feature = n_feature, n_rows = params.get('n_rows'), n_cols = params.get('n_cols'),
-                                      n_class = n_class,
+      lvq = LvqNetworkWithNeighborhood(n_rows = params.get('n_rows'), n_cols = params.get('n_cols'),
                                       learning_rate = params.get('learning_rate'), decay_rate = params.get('decay_rate'),
                                       sigma = params.get('sigma'), sigma_decay_rate = params.get('sigma_decay_rate'),
                                       neighborhood = params.get('neighborhood'))
