@@ -12,6 +12,13 @@ import json
 app = Flask(__name__)
 api = Api(app)
 
+@app.after_request
+def after_request(response):
+  response.headers.add('Access-Control-Allow-Origin', '*')
+  response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+  return response
+
 DEFAULT_ARGUMENTS = {
   "size": 9,
   "learning_rate": 0.5,
@@ -24,7 +31,7 @@ DEFAULT_ARGUMENTS = {
   "label_weight": "inverse_distance"
 }
 
-class SsomTrainApi(Resource):
+class SsomTrainingApi(Resource):
 
   def post(self):
     # Message and warning
@@ -83,6 +90,8 @@ class SsomTrainApi(Resource):
         raise ValueError
       X_train = X_train.T
       y_train = np.array(y).astype(np.int8)
+      if len(X_train) != len(y_train):
+        return {"message": "Dataset is not compatible"}, 400
     except ValueError:
       message = "Dataset is expected to be numbers. Features are expected to be 2 dimensions array"
       return {"message": message}, 400
@@ -143,32 +152,131 @@ class SsomTrainApi(Resource):
     message = "success"
     return {"message": message, "warning": warning}, 200
 
-class SsomPredictApi(Resource):
+class SsomVerificationApi(Resource):
 
   def post(self):
+    # Getting data sent to server
     body_data = request.get_json()
-    model_id = body_data.get('model_id')
-    dataset = body_data.get('dataset')
-    X_pred = dataset.get('features')
-    X_pred = np.array(X_pred).T
 
+    # Getting arguments sent to server
+    if body_data.get('model_id'):
+      model_id = body_data.get('model_id')
+    else:
+      message = "No {} is provided!".format("model id")
+      return {"message": message}, 400
+
+    if body_data.get('dataset'):
+      dataset = body_data.get('dataset')
+    else:
+      message = "No {} is provided!".format("dataset")
+      return {"message": message}, 400
+
+    # Validating dataset
+    X = dataset.get('features')
+    y = dataset.get('target')
+    try:
+      X_val = np.array(X).astype(np.float)
+      if len(X_val.shape) < 2:
+        raise ValueError
+      X_val = X_val.T
+      y_val = np.array(y).astype(np.int8)
+      if len(X_val) != len(y_val):
+        return {"message": "Dataset is not compatible"}, 400
+    except ValueError:
+      message = "Dataset is expected to be numbers. Features are expected to be 2 dimensions array"
+      return {"message": message}, 400
+
+    # Loading trained model
     from sklearn.externals import joblib
-    model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dump_model/' + model_id + ".sav")
-    ssom = joblib.load(model_filepath)
+    try:
+      model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dump_model/' + model_id + ".sav")
+      ssom = joblib.load(model_filepath)
+    except FileNotFoundError:
+      return {"message": "Model does not exist."}, 400
 
-    y_pred = ssom.predict(X_pred).astype(np.int8)
+    # Making prediction
+    y_pred = ssom.predict(X_val).astype(np.int8)
+
+    # Making confusion matrix
+    from sklearn.metrics import confusion_matrix
+    cm = confusion_matrix(y_val, y_pred)
+
+    # Calculating accuracy
+    true_pred = 0
+    for i in range (len(cm)):
+      true_pred += cm[i][i]
+    accuracy = true_pred / np.sum(cm)
 
     # Generating response
     response = {}
-    response['target'] = y_pred.tolist()
+    response['target_prediction'] = y_pred.tolist()
+    response['confusion_matrix'] = cm.tolist()
+    response['accuracy'] = accuracy
     response['message'] = 'success'
     response['status'] = 200
     response = json.dumps(response)
     # print(response)
     return response, 200
 
-api.add_resource(SsomTrainApi, '/api/v1/ssom/train')
-api.add_resource(SsomPredictApi, '/api/v1/ssom/predict')
+class SsomPredictionApi(Resource):
+
+  def post(self):
+    # Getting data sent to server
+    body_data = request.get_json()
+
+    # Getting arguments sent to server
+    if body_data.get('model_id'):
+      model_id = body_data.get('model_id')
+    else:
+      message = "No {} is provided!".format("model id")
+      return {"message": message}, 400
+
+    if body_data.get('dataset'):
+      dataset = body_data.get('dataset')
+    else:
+      message = "No {} is provided!".format("dataset")
+      return {"message": message}, 400
+
+    # Validating dataset
+    X = dataset.get('features')
+    try:
+      X_pred = np.array(X).astype(np.float)
+      if len(X_pred.shape) < 2:
+        raise ValueError
+      X_pred = X_pred.T
+    except ValueError:
+      message = "Dataset is expected to be numbers. Features are expected to be 2 dimensions array"
+      return {"message": message}, 400
+
+    # Loading trained model
+    from sklearn.externals import joblib
+    try:
+      model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dump_model/' + model_id + ".sav")
+      ssom = joblib.load(model_filepath)
+    except FileNotFoundError:
+      return {"message": "Model does not exist."}, 400
+
+    # Making prediction
+    y_pred = ssom.predict(X_pred).astype(np.int8)
+
+    # Generating response
+    response = {}
+    response['target_prediction'] = y_pred.tolist()
+    response['message'] = 'success'
+    response['status'] = 200
+    response = json.dumps(response)
+    # print(response)
+    return response, 200
+
+class SsomModelApi(Resource):
+
+  def get(self, model_id):
+    return {"model_id": model_id}, 200
+
+api.add_resource(SsomTrainingApi, '/api/v1/ssom/train')
+api.add_resource(SsomVerificationApi, '/api/v1/ssom/verify')
+api.add_resource(SsomPredictionApi, '/api/v1/ssom/predict')
+api.add_resource(SsomModelApi, '/api/v1/ssom/models/<model_id>')
 
 if __name__ == '__main__':
   app.run(host = '0.0.0.0', port = 1234)
