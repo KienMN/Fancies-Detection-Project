@@ -273,6 +273,8 @@ class SsomModelApi(Resource):
   def get(self, model_id):
     return {"model_id": model_id}, 200
 
+
+
 api.add_resource(SsomTrainingApi, '/api/v1/ssom/train')
 api.add_resource(SsomVerificationApi, '/api/v1/ssom/verify')
 api.add_resource(SsomPredictionApi, '/api/v1/ssom/predict')
