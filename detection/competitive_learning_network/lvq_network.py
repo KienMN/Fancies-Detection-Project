@@ -2,7 +2,6 @@ from math import exp
 import numpy as np
 from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, ones, argwhere, argmin, argsort, unique, sum
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from .utils import fast_norm, compet, euclidean_distance, default_bias_function
 from .utils import default_learning_rate_decay_function, default_radius_decay_function, default_non_bias_function
 from .utils import limit_range
@@ -48,10 +47,13 @@ class LvqNetwork(object):
   def __init__(self, n_subclass,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
               bias = True, bias_function = None, weights_normalization = None, weights_init = None):
-    
+
     self._n_subclass = n_subclass
     self._learning_rate = learning_rate
     self._decay_rate = decay_rate
+
+    # Epoch
+    self._current_epoch = 0
 
     if learning_rate_decay_function:
       self._learning_rate_decay_function = learning_rate_decay_function
@@ -66,6 +68,7 @@ class LvqNetwork(object):
     else:
       self._bias_function = default_non_bias_function
 
+    # Weights normalization
     if weights_normalization == "length":
       self._weights_normalization = weights_normalization
     else:
@@ -86,10 +89,6 @@ class LvqNetwork(object):
 
     # Initializing winner neurons counter
     self._winner_count = zeros((n_subclass))
-    
-    # Label encoder
-    self._scaler = MinMaxScaler(feature_range = feature_range)
-    self._label_encoder = LabelEncoder()
 
   def pca_weights_init(self, *args, **kwargs):
     pass
@@ -223,9 +222,7 @@ class LvqNetwork(object):
       raise Exception("Data is expected to be 2D array")
     self._n_feature = X.shape[1]
 
-    X = self._scaler.fit_transform(X)
     y = y.astype(np.int8)
-    y = self._label_encoder.fit_transform(y)
     self._n_class = len(unique(y))
     
     if self._n_subclass < self._n_class:
@@ -285,9 +282,12 @@ class LvqNetwork(object):
     iteration = 0
     while iteration < num_iteration:
       idx = iteration % len(X)
-      epoch = iteration // epoch_size
-      self.update(x = X[idx], y = y[idx], epoch = epoch)
+      # epoch = iteration // epoch_size
+      # self.update(x = X[idx], y = y[idx], epoch = epoch)
+      self.update(x = X[idx], y = y[idx], epoch = self._current_epoch)
       iteration += 1
+      if iteration % epoch_size == 0:
+        self._current_epoch += 1
     return self
 
   def predict(self, X, confidence = False):
@@ -309,7 +309,7 @@ class LvqNetwork(object):
     confidence_score : 1D numpy array, shape (n_samples,)
       If confidence is true, returns confidence scores of prediction made.
     """
-    X = self._scaler.transform(X)
+
     y_pred = array([]).astype(np.int8)
     confidence_score = array([])
     k = self._n_subclass // 20
@@ -340,8 +340,6 @@ class LvqNetwork(object):
             a = a + exp(-(distances[neighbors[j]] ** 2))
           b = b + exp(-(distances[neighbors[j]] ** 2))
         confidence_score = append(confidence_score, a / b)
-
-    y_pred = self._label_encoder.inverse_transform(y_pred)
     
     if confidence:
       return y_pred, confidence_score
@@ -691,9 +689,12 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     iteration = 0
     while iteration < num_iteration:
       idx = iteration % len(X)
-      epoch = iteration // epoch_size
-      self.update(x = X[idx], epoch = epoch)
+      # epoch = iteration // epoch_size
+      # self.update(x = X[idx], epoch = epoch)
+      self.update(x = X[idx], epoch = self._current_epoch)
       iteration += 1
+      if iteration % epoch_size == 0:
+        self._current_epoch += 1
     return self
 
   def label_neurons(self, X, y):
@@ -712,8 +713,14 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     self : object
       Returns self.
     """
+    self._n_class = len(unique(y))
     self._n_neurons_each_classes = zeros(self._n_class)
     self._neurons_confidence = zeros((self._n_subclass, self._n_class))
+
+    # Initializing linear layer weights
+    if self._linear_layer_weights is None:
+      self._linear_layer_weights = zeros((self._n_class, self._n_subclass))
+
     if self._label_weight == 'exponential_distance':
       neurons_weight = zeros((self._n_subclass, self._n_class))
       m = len(X)
@@ -816,9 +823,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     if len(X.shape) <= 1:
       raise Exception("Data is expected to be 2D array")
     self._n_feature = X.shape[1]
-    X = self._scaler.fit_transform(X)
     y = y.astype(np.int8)
-    y = self._label_encoder.fit_transform(y)
     self._n_class = len(unique(y))
     
     if self._n_subclass < self._n_class:
@@ -871,7 +876,6 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     confidence_score : 1D numpy array, shape (n_samples,)
       If confidence is true, returns confidence scores of prediction made.
     """
-    X = self._scaler.transform(X)
     y_pred = array([]).astype(np.int8)
     confidence_score = array([])
     n_sample = len(X)
@@ -885,8 +889,6 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       # Computing confidence score
       if confidence:
         confidence_score = append(confidence_score, self._neurons_confidence[win_idx, y_i])
-    if (y_pred.size > 0):
-      y_pred = self._label_encoder.inverse_transform(y_pred)
     
     if confidence:
       return y_pred, confidence_score
