@@ -45,14 +45,14 @@ from detection.data_preparation import duplicate_data
 X_train_dup, y_train_dup = duplicate_data(X_train, y = y_train, total_length = 4000, step = 400)
 
 # Fitting the model
-iterations = np.arange(0, 8001, 400)
+iterations = np.arange(0, 4001, 200)
 qe = []
 qe.append(lvq.quantization_error(X_train))
 for i in range (10):
-  qe.append(lvq.train_competitive(X_train_dup[i], 400, 400).quantization_error(X_train))
+  qe.append(lvq.train_competitive(X_train_dup[i], 200, 200).quantization_error(X_train))
 lvq.label_neurons(X_train, y_train)
 for i in range (10):
-  qe.append(lvq.train_batch(X_train_dup[i], y_train_dup[i], 400, 400).quantization_error(X_train))
+  qe.append(lvq.train_batch(X_train_dup[i], y_train_dup[i], 200, 200).quantization_error(X_train))
 
 import matplotlib.pyplot as plt
 plt.plot(iterations, qe)

@@ -32,9 +32,9 @@ y_train = encoder.fit_transform(y_train)
 
 # Training the LVQ
 from detection.competitive_learning_network import LvqNetwork
-lvq = LvqNetwork(n_subclass = 100, learning_rate = 0.5, decay_rate = 1, weights_normalization="length")
-# lvq.sample_weights_init(X_train)
-lvq.fit(X_train, y_train, num_iteration = 10000, epoch_size = len(X_train))
+lvq = LvqNetwork(n_subclass = 100, learning_rate = 0.5, decay_rate = 1)
+lvq.sample_weights_init(X_train)
+lvq.fit(X_train, y_train, num_iteration = 10000, epoch_size = 500)
 
 # Predict the result
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1)

@@ -39,8 +39,19 @@ lvq = LvqNetworkWithNeighborhood(n_rows = 10, n_cols = 10,
                                 weights_init = 'pca',
                                 neighborhood="bubble")
 # lvq.sample_weights_init(X_train)
-# lvq.pca_weights_init(X_train)
-lvq.fit(X_train, y_train, num_iteration = 5000, epoch_size = 100)
+lvq.pca_weights_init(X_train)
+# lvq.fit(X_train, y_train, num_iteration = 5000, epoch_size = 100)
+
+from detection.data_preparation import duplicate_data
+X_dup, y_dup = duplicate_data(X_train, y = y_train, total_length = 5000, step = 100)
+iteration = np.arange(0, 5001, 100)
+qe = []
+qe.append(lvq.quantization_error(X_train))
+for i in range (len(X_dup)):
+  qe.append(lvq.fit(X_dup[i], y_dup[i], 100, 100).quantization_error(X_train))
+import matplotlib.pyplot as plt
+plt.plot(iteration, qe)
+plt.show()
 
 # Predict the result
 y_pred = lvq.predict(X_test)

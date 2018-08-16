@@ -91,7 +91,7 @@ class LvqNetwork(object):
     self._winner_count = zeros((n_subclass))
 
   def pca_weights_init(self, *args, **kwargs):
-    pass
+    return self
 
   def sample_weights_init(self, data):
     """
@@ -107,6 +107,9 @@ class LvqNetwork(object):
     self : object
       Returns self.
     """
+    if self._competitive_layer_weights is None:
+      self._competitive_layer_weights = zeros((self._n_subclass, data.shape[1]))
+
     for i in range (self._n_subclass):
       # Initializing the weights, picking random sample from data
       rand_idx = random.random_integers(0, len(data) - 1)
@@ -229,29 +232,31 @@ class LvqNetwork(object):
       raise Exception("The number of subclasses must be more than or equal to the number of classes")
     
     # Initializing competitive layer weights
-    self._competitive_layer_weights = random.RandomState().rand(self._n_subclass, self._n_feature)
+    if self._competitive_layer_weights is None:
+      self._competitive_layer_weights = random.RandomState().rand(self._n_subclass, self._n_feature)
     
-    # Normalizing competitive layer weights
-    for i in range (self._n_subclass):
-      if self._weights_normalization == "length":
-        norm = fast_norm(self._competitive_layer_weights[i])
-        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
+      # Normalizing competitive layer weights
+      for i in range (self._n_subclass):
+        if self._weights_normalization == "length":
+          norm = fast_norm(self._competitive_layer_weights[i])
+          self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
+
+      if self._weights_init == 'sample':
+        self.sample_weights_init(X)
+      elif self._weights_init == 'pca':
+        self.pca_weights_init(X)
 
     # Initializing linear layer weights
-    self._linear_layer_weights = zeros((self._n_class, self._n_subclass))
-    n_subclass_per_class = self._n_subclass // self._n_class
-    for i in range (self._n_class):
-      if i != self._n_class - 1:
-        for j in range (i * n_subclass_per_class, (i + 1) * n_subclass_per_class):
-          self._linear_layer_weights[i][j] = 1
-      else:
-        for j in range (i * n_subclass_per_class, self._n_subclass):
-          self._linear_layer_weights[i][j] = 1
-
-    if self._weights_init == 'sample':
-      self.sample_weights_init(X)
-    elif self._weights_init == 'pca':
-      self.pca_weights_init(X)
+    if self._linear_layer_weights is None:
+      self._linear_layer_weights = zeros((self._n_class, self._n_subclass))
+      n_subclass_per_class = self._n_subclass // self._n_class
+      for i in range (self._n_class):
+        if i != self._n_class - 1:
+          for j in range (i * n_subclass_per_class, (i + 1) * n_subclass_per_class):
+            self._linear_layer_weights[i][j] = 1
+        else:
+          for j in range (i * n_subclass_per_class, self._n_subclass):
+            self._linear_layer_weights[i][j] = 1
 
     self.train_batch(X, y, num_iteration, epoch_size)
 
