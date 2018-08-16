@@ -77,6 +77,10 @@ class LvqNetwork(object):
     else:
       self._weights_init = 'random'
 
+    # Weights
+    self._competitive_layer_weights = None
+    self._linear_layer_weights = None
+
     # Initializing biases value corresponding to competitive layer
     self._biases = zeros((n_subclass))
 
@@ -190,6 +194,8 @@ class LvqNetwork(object):
     if self._weights_normalization == "length":
       norm = fast_norm(self._competitive_layer_weights[win_idx])
       self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] / norm
+
+    return self
 
   def fit(self, X, y, num_iteration, epoch_size):
     """Fit the model according to the given training data.
@@ -510,7 +516,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     self : object
       Returns self.
     """
-    self._competitive_layer_weights = zeros((self._n_subclass, self._n_feature))
+    self._competitive_layer_weights = zeros((self._n_subclass, data.shape[1]))
     pca_number_of_components = None
     coord = None
     if self._n_cols_subclass == 1 or self._n_rows_subclass == 1 or data.shape[1] == 1:
@@ -819,20 +825,23 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       raise Exception("The number of subclasses must be more than or equal to the number of classes")
     
     # Initializing competitive layer weights
-    self._competitive_layer_weights = random.RandomState().rand(self._n_subclass, self._n_feature)
-    # Normalizing competitive layer weights
-    for i in range (self._n_subclass):
-      if self._weights_normalization == "length":
-        norm = fast_norm(self._competitive_layer_weights[i])
-        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
+    if self._competitive_layer_weights is None:
+      self._competitive_layer_weights = random.RandomState().rand(self._n_subclass, self._n_feature)
+      
+      if self._weights_init == 'sample':
+        self.sample_weights_init(X)
+      elif self._weights_init == 'pca':
+        self.pca_weights_init(X)
+      
+      # Normalizing competitive layer weights
+      for i in range (self._n_subclass):
+        if self._weights_normalization == "length":
+          norm = fast_norm(self._competitive_layer_weights[i])
+          self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
 
     # Initializing linear layer weights
-    self._linear_layer_weights = zeros((self._n_class, self._n_subclass))
-
-    if self._weights_init == 'sample':
-      self.sample_weights_init(X)
-    elif self._weights_init == 'pca':
-      self.pca_weights_init(X)
+    if self._linear_layer_weights is None:
+      self._linear_layer_weights = zeros((self._n_class, self._n_subclass))
     
     # Phase 1: Training using SOM concept
     self.train_competitive(X, first_num_iteration, first_epoch_size)
