@@ -17,7 +17,18 @@ y = dataset.iloc[:, -1].values.astype(np.int8)
 
 # Spliting the dataset into the Training set and the Test set
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
+
+# Feature scaling
+from sklearn.preprocessing import MinMaxScaler
+sc = MinMaxScaler(feature_range = (-1, 1))
+X_train = sc.fit_transform(X_train)
+X_test = sc.transform(X_test)
+
+# Label encoder
+from sklearn.preprocessing import LabelEncoder
+encoder = LabelEncoder()
+y_train = encoder.fit_transform(y_train)
 
 # Training the LVQ
 from detection.competitive_learning_network import AdaptiveLVQ
@@ -27,10 +38,11 @@ lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
                   # weights_normalization = "length",
                   bias = True, weights_init = 'pca',
                   neighborhood='gaussian', label_weight = 'exponential_distance')
-lvq.fit(X_train, y_train, first_num_iteration = 4, first_epoch_size = len(X_train), second_num_iteration = 4, second_epoch_size = len(X_train))
+lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, second_num_iteration = 4000, second_epoch_size = 400)
 
 # Predict the result
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1)
+y_pred = encoder.inverse_transform(y_pred)
 
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix
@@ -38,18 +50,16 @@ cm = confusion_matrix(y_test, y_pred)
 
 # Printing the confusion matrix
 print(cm)
-print((cm[0][0] + cm[1][1] + cm[2][2] + cm[3][3]) / np.sum(cm))
+true_result = 0
+for i in range (len(cm)):
+  true_result += cm[i][i]
+print(true_result / np.sum(cm))
 
 # Visualization
-# lvq.details()
-from sklearn.preprocessing import MinMaxScaler
-sc = MinMaxScaler(feature_range=(0, 1))
-# lvq.visualize('/Users/kienmaingoc/Desktop/som_test1.png')
-# lvq.visualize()
 from detection.competitive_learning_network.visualization import network_mapping, feature_distribution
 
 feature_distribution(9, 9, lvq._competitive_layer_weights, figure_path = '/Users/kienmaingoc/Desktop/som_test4.png')
 
 network_mapping(9, 9, 4, lvq._competitive_layer_weights, lvq._linear_layer_weights, 
-                lvq._label_encoder.inverse_transform(np.arange(0, 4, 1)),
+                encoder.inverse_transform(np.arange(0, 4, 1)),
                 figure_path = '/Users/kienmaingoc/Desktop/som_test3.png')

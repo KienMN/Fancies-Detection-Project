@@ -25,6 +25,11 @@ sc = MinMaxScaler(feature_range = (-1, 1))
 X_train = sc.fit_transform(X_train)
 X_test = sc.transform(X_test)
 
+# Label encoder
+from sklearn.preprocessing import LabelEncoder
+encoder = LabelEncoder()
+y_train = encoder.fit_transform(y_train)
+
 # Training the LVQ
 from detection.competitive_learning_network import LvqNetworkWithNeighborhood
 lvq = LvqNetworkWithNeighborhood(n_rows = 10, n_cols = 10,
@@ -39,6 +44,7 @@ lvq.fit(X_train, y_train, num_iteration = 5000, epoch_size = 100)
 
 # Predict the result
 y_pred = lvq.predict(X_test)
+y_pred = encoder.inverse_transform(y_pred)
 
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix
@@ -46,7 +52,10 @@ cm = confusion_matrix(y_test, y_pred)
 
 # Printing the confusion matrix
 print(cm)
-print((cm[0][0] + cm[1][1] + cm[2][2] + cm[3][3]) / np.sum(cm))
+true_result = 0
+for i in range (len(cm)):
+  true_result += cm[i][i]
+print(true_result / np.sum(cm))
 
 # Visualization
 # lvq.details()
