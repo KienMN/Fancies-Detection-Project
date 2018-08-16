@@ -30,7 +30,7 @@ from sklearn.preprocessing import LabelEncoder
 encoder = LabelEncoder()
 y_train = encoder.fit_transform(y_train)
 
-# Training the LVQ continuously
+# Training the LVQ discretely
 from detection.competitive_learning_network import AdaptiveLVQ
 lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
                   learning_rate = 0.5, decay_rate = 1,
@@ -38,7 +38,25 @@ lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
                   # weights_normalization = "length",
                   bias = True, weights_init = 'pca',
                   neighborhood='gaussian', label_weight = 'exponential_distance')
-lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, second_num_iteration = 4000, second_epoch_size = 400)
+lvq.pca_weights_init(X_train)
+
+# Duplicating the data
+from detection.data_preparation import duplicate_data
+X_train_dup, y_train_dup = duplicate_data(X_train, y = y_train, total_length = 4000, step = 400)
+
+# Fitting the model
+iterations = np.arange(0, 8001, 400)
+qe = []
+qe.append(lvq.quantization_error(X_train))
+for i in range (10):
+  qe.append(lvq.train_competitive(X_train_dup[i], 400, 400).quantization_error(X_train))
+lvq.label_neurons(X_train, y_train)
+for i in range (10):
+  qe.append(lvq.train_batch(X_train_dup[i], y_train_dup[i], 400, 400).quantization_error(X_train))
+
+import matplotlib.pyplot as plt
+plt.plot(iterations, qe)
+plt.show()
 
 # Predict the result
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1)
@@ -55,47 +73,9 @@ for i in range (len(cm)):
   true_result += cm[i][i]
 print(true_result / np.sum(cm))
 
-# Training the LVQ discretely
-lvq2 = AdaptiveLVQ(n_rows = 9, n_cols = 9,
-                  learning_rate = 0.5, decay_rate = 1,
-                  sigma = 1, sigma_decay_rate = 1,
-                  # weights_normalization = "length",
-                  bias = True, weights_init = 'pca',
-                  neighborhood='gaussian', label_weight = 'exponential_distance')
-lvq2.pca_weights_init(X_train)
-
-# Duplicating the data
-from detection.data_preparation import duplicate_data
-X_train_dup, y_train_dup = duplicate_data(X_train, y = y_train, total_length = 4000, step = 400)
-
-# Fitting the model
-for i in range (10):
-  lvq2.train_competitive(X_train_dup[i], 400, 400)
-lvq2.label_neurons(X_train, y_train)
-for i in range (10):
-  lvq2.train_batch(X_train_dup[i], y_train_dup[i], 400, 400)
-
-# Predict the result
-y_pred2, confidence_score = lvq2.predict(X_test, confidence = 1)
-y_pred2 = encoder.inverse_transform(y_pred2)
-
-# Making confusion matrix
-from sklearn.metrics import confusion_matrix
-cm = confusion_matrix(y_test, y_pred2)
-
-# Printing the confusion matrix
-print(cm)
-true_result = 0
-for i in range (len(cm)):
-  true_result += cm[i][i]
-print(true_result / np.sum(cm))
-
 # Visualizing
-from detection.competitive_learning_network.visualization import network_mapping
-network_mapping(lvq._n_rows_subclass, lvq._n_cols_subclass, lvq._n_class, lvq._competitive_layer_weights, lvq._linear_layer_weights, 
-                encoder.inverse_transform(np.arange(0, 4, 1)),
-                figure_path = '/Users/kienmaingoc/Desktop/continuous_som.png')
+# from detection.competitive_learning_network.visualization import network_mapping
 
-network_mapping(lvq2._n_rows_subclass, lvq2._n_cols_subclass, lvq2._n_class, lvq2._competitive_layer_weights, lvq2._linear_layer_weights, 
-                encoder.inverse_transform(np.arange(0, 4, 1)),
-                figure_path = '/Users/kienmaingoc/Desktop/discrete_som.png')
+# network_mapping(lvq._n_rows_subclass, lvq2._n_cols_subclass, lvq2._n_class, lvq2._competitive_layer_weights, lvq2._linear_layer_weights, 
+#                 encoder.inverse_transform(np.arange(0, 4, 1)),
+#                 figure_path = '/Users/kienmaingoc/Desktop/discrete_som.png')
