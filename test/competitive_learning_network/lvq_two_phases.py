@@ -41,7 +41,7 @@ lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
 lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, second_num_iteration = 4000, second_epoch_size = 400)
 
 # Predict the result
-y_pred, confidence_score = lvq.predict(X_test, confidence = 1)
+y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit='winner_neuron')
 y_pred = encoder.inverse_transform(y_pred)
 
 # Making confusion matrix
@@ -56,10 +56,13 @@ for i in range (len(cm)):
 print(true_result / np.sum(cm))
 
 # Visualization
-from detection.competitive_learning_network.visualization import network_mapping, feature_distribution
+# from detection.competitive_learning_network.visualization import network_mapping, feature_distribution
 
-feature_distribution(9, 9, lvq._competitive_layer_weights, figure_path = '/Users/kienmaingoc/Desktop/som_test4.png')
+# feature_distribution(9, 9, lvq._competitive_layer_weights, figure_path = '/Users/kienmaingoc/Desktop/som_test4.png')
 
-network_mapping(9, 9, 4, lvq._competitive_layer_weights, lvq._linear_layer_weights, 
-                encoder.inverse_transform(np.arange(0, 4, 1)),
-                figure_path = '/Users/kienmaingoc/Desktop/som_test3.png')
+# network_mapping(9, 9, 4, lvq._competitive_layer_weights, lvq._linear_layer_weights, 
+#                 encoder.inverse_transform(np.arange(0, 4, 1)),
+#                 figure_path = '/Users/kienmaingoc/Desktop/som_test3.png')
+
+for i in range (len(y_pred)):
+  print(i, y_pred[i], y_test[i], confidence_score[i])

@@ -861,17 +861,58 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
 
     return self
 
-  def predict(self, X, confidence = False):
+  # def predict(self, X, confidence = False):
+  #   """Predicting the class according to input vectors.
+
+  #   Parameters
+  #   ----------
+
+  #   X : 2D numpy array, shape (n_samples, n_features)
+  #     Data vectors, where n_samples is the number of samples and n_features is the number of features.
+
+  #   confidence : bool, default: False
+  #     Computes and returns confidence score if confidence is true.
+
+  #   Returns
+  #   -------
+  #   y_pred : 1D numpy array, shape (n_samples,)
+  #     Prediction target vector relative to X.
+
+  #   confidence_score : 1D numpy array, shape (n_samples,)
+  #     If confidence is true, returns confidence scores of prediction made.
+  #   """
+  #   y_pred = array([]).astype(np.int8)
+  #   confidence_score = array([])
+  #   n_sample = len(X)
+  #   for i in range (n_sample):
+  #     x = X[i]
+  #     win = self.winner(x)
+  #     win_idx = argmax(win)
+  #     y_i = int(self.classify(win))
+  #     y_pred = append(y_pred, y_i)
+
+  #     # Computing confidence score
+  #     if confidence:
+  #       confidence_score = append(confidence_score, self._neurons_confidence[win_idx, y_i])
+    
+  #   if confidence:
+  #     return y_pred, confidence_score
+  #   else:
+  #     return y_pred
+
+  def predict(self, X, confidence = False, crit = 'distance'):
     """Predicting the class according to input vectors.
 
     Parameters
     ----------
-
     X : 2D numpy array, shape (n_samples, n_features)
       Data vectors, where n_samples is the number of samples and n_features is the number of features.
 
     confidence : bool, default: False
       Computes and returns confidence score if confidence is true.
+
+    crit : option ['distance', 'winner_neuron'], default: 'distance'
+      Criterion to compute confidence score.
 
     Returns
     -------
@@ -881,21 +922,27 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     confidence_score : 1D numpy array, shape (n_samples,)
       If confidence is true, returns confidence scores of prediction made.
     """
-    y_pred = array([]).astype(np.int8)
-    confidence_score = array([])
-    n_sample = len(X)
-    for i in range (n_sample):
-      x = X[i]
-      win = self.winner(x)
-      win_idx = argmax(win)
-      y_i = int(self.classify(win))
-      y_pred = append(y_pred, y_i)
+    # Check criterion's validity
+    if crit != 'winner_neuron':
+      crit = 'distance'
 
-      # Computing confidence score
-      if confidence:
+    # If confidence score is included
+    if confidence and crit == 'distance':
+      return super().predict(X, confidence = True)
+    elif confidence and crit == 'winner_neuron':
+      y_pred = array([]).astype(np.int8)
+      confidence_score = array([])
+      n_sample = len(X)
+      for i in range (n_sample):
+        x = X[i]
+        win = self.winner(x)
+        win_idx = argmax(win)
+        y_i = int(self.classify(win))
+        y_pred = append(y_pred, y_i)
+
+        # Computing confidence score
         confidence_score = append(confidence_score, self._neurons_confidence[win_idx, y_i])
-    
-    if confidence:
       return y_pred, confidence_score
-    else:
-      return y_pred
+    
+    # If confidence score is not included
+    return super().predict(X)
