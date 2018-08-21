@@ -351,6 +351,11 @@ class LvqNetwork(object):
     else:
       return y_pred
 
+  def distance_from_winner(self, x):
+    win = self.winner(x)
+    win_idx = argmax(win)
+    return euclidean_distance(x, self._competitive_layer_weights[win_idx])
+
   def quantization_error(self, X):
     """Determining quantization error of the network.
 
