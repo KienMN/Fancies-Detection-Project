@@ -36,7 +36,7 @@ lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
                   learning_rate = 0.5, decay_rate = 1,
                   sigma = 1, sigma_decay_rate = 1,
                   # weights_normalization = "length",
-                  bias = True, weights_init = 'pca',
+                  bias = False, weights_init = 'pca',
                   neighborhood='gaussian', label_weight = 'exponential_distance')
 lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, second_num_iteration = 4000, second_epoch_size = 400)
 
@@ -64,5 +64,5 @@ print(true_result / np.sum(cm))
 #                 encoder.inverse_transform(np.arange(0, 4, 1)),
 #                 figure_path = '/Users/kienmaingoc/Desktop/som_test3.png')
 
-for i in range (len(y_pred)):
-  print(i, y_pred[i], y_test[i], confidence_score[i])
+# for i in range (len(y_pred)):
+#   print(i, y_pred[i], y_test[i], confidence_score[i])

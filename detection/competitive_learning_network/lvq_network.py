@@ -4,7 +4,7 @@ from numpy import array, argmax, zeros, random, append, dot, copy, amax, amin, o
 from sklearn.decomposition import PCA
 from .utils import fast_norm, compet, euclidean_distance, default_bias_function
 from .utils import default_learning_rate_decay_function, default_radius_decay_function, default_non_bias_function
-from .utils import limit_range
+# from .utils import limit_range
 
 feature_range = (-1, 1)
 visual_feature_range = (0, 1)
@@ -187,10 +187,10 @@ class LvqNetwork(object):
     else:
       self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] - alpha * (x - self._competitive_layer_weights[win_idx])
     # Limiting range of weights
-    if self._weights_init == 'random':
-      self._competitive_layer_weights[win_idx] = limit_range(self._competitive_layer_weights[win_idx])
-    else:
-      self._competitive_layer_weights[win_idx] = limit_range(self._competitive_layer_weights[win_idx], feature_range = feature_range)
+    # if self._weights_init == 'random':
+    #   self._competitive_layer_weights[win_idx] = limit_range(self._competitive_layer_weights[win_idx])
+    # else:
+    #   self._competitive_layer_weights[win_idx] = limit_range(self._competitive_layer_weights[win_idx], feature_range = feature_range)
 
     # Normalizing the weights
     if self._weights_normalization == "length":
@@ -597,10 +597,10 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     for i in range(self._n_subclass):
       self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * alpha * correlation[i] * (x - self._competitive_layer_weights[i])
       # Limiting the weights
-      if self._weights_init == 'random':
-        self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i])
-      else:
-        self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i], feature_range = feature_range)
+      # if self._weights_init == 'random':
+      #   self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i])
+      # else:
+      #   self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i], feature_range = feature_range)
       
       # Normalizing the weights
       if self._weights_normalization == "length":
