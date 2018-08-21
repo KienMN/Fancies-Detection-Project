@@ -182,10 +182,11 @@ class LvqNetwork(object):
     self._winner_count[win_idx] += 1
     y_hat = self.classify(win)
     alpha = self._learning_rate_decay_function(self._learning_rate, epoch, self._decay_rate)
+    beta = alpha / 100
     if y_hat == y:
       self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] + alpha * (x - self._competitive_layer_weights[win_idx])
     else:
-      self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] - alpha * (x - self._competitive_layer_weights[win_idx])
+      self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] - beta * (x - self._competitive_layer_weights[win_idx])
     # Limiting range of weights
     # if self._weights_init == 'random':
     #   self._competitive_layer_weights[win_idx] = limit_range(self._competitive_layer_weights[win_idx])
@@ -587,6 +588,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     self._biases = self._bias_function(self._biases, win_idx)
     self._winner_count[win_idx] += 1
     alpha = self._learning_rate_decay_function(self._learning_rate, epoch, self._decay_rate)
+    beta = alpha / 100
     radius = self._radius_decay_function(self._radius, epoch, self._radius_decay_rate)
     correlation = self.neighborhood(win_idx, radius)
     is_class = None
@@ -595,7 +597,10 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     else:
       is_class = ones(self._n_subclass)
     for i in range(self._n_subclass):
-      self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * alpha * correlation[i] * (x - self._competitive_layer_weights[i])
+      if is_class[i] == 1:
+        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * alpha * correlation[i] * (x - self._competitive_layer_weights[i])
+      elif is_class[i] == -1:
+        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * beta * correlation[i] * (x - self._competitive_layer_weights[i])
       # Limiting the weights
       # if self._weights_init == 'random':
       #   self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i])

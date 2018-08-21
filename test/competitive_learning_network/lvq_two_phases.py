@@ -55,6 +55,7 @@ for i in range (len(cm)):
   true_result += cm[i][i]
 print(true_result / np.sum(cm))
 
+print(lvq._winner_count)
 # Visualization
 # from detection.competitive_learning_network.visualization import network_mapping, feature_distribution
 
