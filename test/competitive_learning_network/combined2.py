@@ -45,7 +45,7 @@ from detection.competitive_learning_network.combined_som import CombinedSom
 combined_som = CombinedSom(models)
 
 # Making prediction
-y_pred = combined_som.winner_takes_all(X, crit = 'distance')
+y_pred = combined_som.combined_with_weights(X)
 
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix

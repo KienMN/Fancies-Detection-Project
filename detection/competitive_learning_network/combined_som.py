@@ -57,6 +57,22 @@ class CombinedSom(object):
     """
     pass
 
+  def combined_with_weights(self, X):
+    n_sample = len(X)
+    n_class = len(self._models[0]._linear_layer_weights)
+    y_pred = np.array([]).astype(np.int8)
+    scores = np.zeros((n_sample, n_class))
+    for i in range (n_sample):
+      x = X[i]
+      for model in self._models:
+        win = model.winner(x)
+        win_idx = np.argmax(win)
+        distance = model.distance_from_winner(x)
+        for j in range (n_class):
+          scores[i][j] += 1 / distance * model._neurons_confidence[win_idx][j]
+      y_pred = np.append(y_pred, int(np.argmax(scores[i, :])))
+    return y_pred
+
   def major_voting_with_confidence_score(self):
     pass
 
