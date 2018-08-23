@@ -56,6 +56,8 @@ for i in range (len(cm)):
 print(true_result / np.sum(cm))
 
 print(lvq._winner_count)
+print(lvq._competitive_layer_weights)
+print(lvq._biases)
 # Visualization
 # from detection.competitive_learning_network.visualization import network_mapping, feature_distribution
 

@@ -182,7 +182,7 @@ class LvqNetwork(object):
     self._winner_count[win_idx] += 1
     y_hat = self.classify(win)
     alpha = self._learning_rate_decay_function(self._learning_rate, epoch, self._decay_rate)
-    beta = alpha / 100
+    beta = alpha / 3
     if y_hat == y:
       self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] + alpha * (x - self._competitive_layer_weights[win_idx])
     else:
@@ -588,7 +588,7 @@ class LvqNetworkWithNeighborhood(LvqNetwork):
     self._biases = self._bias_function(self._biases, win_idx)
     self._winner_count[win_idx] += 1
     alpha = self._learning_rate_decay_function(self._learning_rate, epoch, self._decay_rate)
-    beta = alpha / 100
+    beta = alpha / 3
     radius = self._radius_decay_function(self._radius, epoch, self._radius_decay_rate)
     correlation = self.neighborhood(win_idx, radius)
     is_class = None

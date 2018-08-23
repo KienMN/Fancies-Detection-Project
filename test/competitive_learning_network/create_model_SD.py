@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 # Importing the dataset
-filepath = os.path.join(os.path.dirname(__file__), 'data/processed_15_1-SD-6X_LQC.csv')
+filepath = os.path.join(os.path.dirname(__file__), 'data/processed_15_1-SD-1X_LQC.csv')
 dataset = pd.read_csv(filepath)
 X = dataset.iloc[:, 2: -1].values
 y = dataset.iloc[:, -1].values.astype(np.int8)
@@ -32,12 +32,12 @@ y_train = encoder.fit_transform(y_train)
 
 # Training the LVQ
 from detection.competitive_learning_network import AdaptiveLVQ
-ssom = AdaptiveLVQ(n_rows = 6, n_cols = 6,
+ssom = AdaptiveLVQ(n_rows = 8, n_cols = 8,
                   learning_rate = 0.5, decay_rate = 1,
                   sigma = 1, sigma_decay_rate = 1,
-                  bias = True, weights_init = 'pca',
+                  bias = False, weights_init = 'pca',
                   neighborhood = 'gaussian', label_weight = 'inverse_distance')
-ssom.fit(X_train, y_train, first_num_iteration = 1500, first_epoch_size = 200, second_num_iteration = 1500, second_epoch_size = 200)
+ssom.fit(X_train, y_train, first_num_iteration = 2000, first_epoch_size = 200, second_num_iteration = 2000, second_epoch_size = 200)
 
 # Predict the result
 y_pred, confidence_score = ssom.predict(X_test, confidence = 1, crit='winner_neuron')
@@ -52,10 +52,14 @@ print(cm)
 true_result = 0
 for i in range (len(cm)):
   true_result += cm[i][i]
+
 print(true_result / np.sum(cm))
+print(ssom._winner_count)
+print(np.sum(ssom._winner_count))
+print(ssom._competitive_layer_weights)
 
 # Dumping the trained model
-from sklearn.externals import joblib
-model_id = 'model-SD-6X'
-model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dump_model/' + model_id + ".sav")
-joblib.dump(ssom, model_filepath)
+# from sklearn.externals import joblib
+# model_id = 'model-SD-6X'
+# model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dump_model/' + model_id + ".sav")
+# joblib.dump(ssom, model_filepath)
