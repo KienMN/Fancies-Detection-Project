@@ -50,7 +50,7 @@ y = encoder.fit_transform(y)
 
 # Training the SSOM
 from detection.competitive_learning_network import AdaptiveLVQ
-sizes = np.arange(5, 11, 5)
+sizes = np.arange(5, 41, 5)
 unused_neurons_with_bias = []
 unused_neurons_without_bias = []
 tested_sizes = []
@@ -74,30 +74,39 @@ for size in sizes:
   # Training process
   for i in range (10):
     np.random.shuffle(X)
-    qe_with_bias.append(ssom.train_competitive(X, num_iteration = n_sample, epoch_size = n_sample).quantization_error(X))
+    ssom.train_competitive(X, num_iteration = n_sample, epoch_size = n_sample)
   ssom.label_neurons(X, y)
   for i in range (10):
     np.random.shuffle(X)
-    qe_with_bias.append(ssom.train_batch(X, y, num_iteration = n_sample, epoch_size = n_sample).quantization_error(X))
+    ssom.train_batch(X, y, num_iteration = n_sample, epoch_size = n_sample).quantization_error(X)
   
-  # Trained weights
-  trained_weights = np.copy(ssom._competitive_layer_weights)
+  # # Trained weights
+  # trained_weights = np.copy(ssom._competitive_layer_weights)
   
-  # Determing distance changes
+  # # Determing distance changes
+  # from detection.competitive_learning_network.utils import euclidean_distance
+  # distance = np.array([])
+  # for i in range (size * size):
+  #   distance = np.append(distance, euclidean_distance(init_weights[i], trained_weights[i]))
+  
+  # # Unused neurons
+  # n_unused_neurons = 0
+  # max_distance = np.max(distance)
+  # for i in range (size * size):
+  #   if distance[i] < threshold * max_distance:
+  #     n_unused_neurons += 1
+
   from detection.competitive_learning_network.utils import euclidean_distance
-  distance = np.array([])
+  nearest_distance_with_bias = []
   for i in range (size * size):
-    distance = np.append(distance, euclidean_distance(init_weights[i], trained_weights[i]))
-  
-  # Unused neurons
-  n_unused_neurons = 0
-  max_distance = np.max(distance)
-  for i in range (size * size):
-    if distance[i] < threshold * max_distance:
-      n_unused_neurons += 1
-  print('Finished epoch:', ssom._current_epoch)
-  print('Unused neurons:', n_unused_neurons)
-  unused_neurons_with_bias.append(n_unused_neurons / (size * size))
+    distance = np.array([])
+    for j in range (n_sample):
+      distance = np.append(distance, euclidean_distance(ssom._competitive_layer_weights[i], X[j]))
+    nearest_distance_with_bias.append(np.min(distance))
+
+  # print('Finished epoch:', ssom._current_epoch)
+  # print('Unused neurons:', n_unused_neurons)
+  # unused_neurons_with_bias.append(n_unused_neurons / (size * size))
 
   # Model without bias
   print('Testing model with size {} without bias ...'.format(size))
@@ -121,42 +130,62 @@ for size in sizes:
     np.random.shuffle(X)
     qe_without_bias.append(ssom.train_batch(X, y, num_iteration = n_sample, epoch_size = n_sample).quantization_error(X))
   
-  # Trained weights
-  trained_weights = np.copy(ssom._competitive_layer_weights)
+  # # Trained weights
+  # trained_weights = np.copy(ssom._competitive_layer_weights)
   
-  # Determing distance changes
+  # # Determing distance changes
+  # from detection.competitive_learning_network.utils import euclidean_distance
+  # distance = np.array([])
+  # for i in range (size * size):
+  #   distance = np.append(distance, euclidean_distance(init_weights[i], trained_weights[i]))
+  
+  # # Unused neurons
+  # n_unused_neurons = 0
+  # max_distance = np.max(distance)
+  # for i in range (size * size):
+  #   if distance[i] < threshold * max_distance:
+  #     n_unused_neurons += 1
+  # print('Finished epoch:', ssom._current_epoch)
+  # print('Unused neurons:', n_unused_neurons)
+  # unused_neurons_without_bias.append(n_unused_neurons / (size * size))
+
   from detection.competitive_learning_network.utils import euclidean_distance
-  distance = np.array([])
+  nearest_distance_without_bias = []
   for i in range (size * size):
-    distance = np.append(distance, euclidean_distance(init_weights[i], trained_weights[i]))
-  
-  # Unused neurons
-  n_unused_neurons = 0
-  max_distance = np.max(distance)
-  for i in range (size * size):
-    if distance[i] < threshold * max_distance:
-      n_unused_neurons += 1
-  print('Finished epoch:', ssom._current_epoch)
-  print('Unused neurons:', n_unused_neurons)
-  unused_neurons_without_bias.append(n_unused_neurons / (size * size))
+    distance = np.array([])
+    for j in range (n_sample):
+      distance = np.append(distance, euclidean_distance(ssom._competitive_layer_weights[i], X[j]))
+    nearest_distance_without_bias.append(np.min(distance))
 
   # Visualization
-  iterations = np.arange(0, 20 * n_sample + 1, n_sample)
-  tested_sizes.append(size)
-  plt.plot(tested_sizes, unused_neurons_with_bias, c = 'r', label = 'With bias')
-  plt.plot(tested_sizes, unused_neurons_without_bias, c = 'b', label = 'Without bias')
-  plt.legend()
-  plt.title('Unused Neurons Proportion (Gaussian neighborhood)')
-  # plt.show()
-  fig_path = os.path.join(os.path.dirname(__file__), 'images/unused_neurons.png')
-  plt.savefig(fig_path)
+  # iterations = np.arange(0, 20 * n_sample + 1, n_sample)
+  # tested_sizes.append(size)
+  # plt.plot(tested_sizes, unused_neurons_with_bias, c = 'r', label = 'With bias')
+  # plt.plot(tested_sizes, unused_neurons_without_bias, c = 'b', label = 'Without bias')
+  # plt.legend()
+  # plt.title('Unused Neurons Proportion (Gaussian neighborhood)')
+  # fig_path = os.path.join(os.path.dirname(__file__), 'images/unused_neurons.png')
+  # plt.savefig(fig_path)
   
   # Quantization error
-  plt.clf()
-  plt.plot(iterations, qe_with_bias, c = 'r', label = 'With bias')
-  plt.plot(iterations, qe_without_bias, c = 'b', label = 'Without bias')
-  plt.legend()
-  plt.title('Quantization error of {} * {} model'.format(size, size))
-  fig_path = os.path.join(os.path.dirname(__file__), 'images/model_{}*{}.png'.format(size, size))
+  # plt.clf()
+  # plt.plot(iterations, qe_with_bias, c = 'r', label = 'With bias')
+  # plt.plot(iterations, qe_without_bias, c = 'b', label = 'Without bias')
+  # plt.legend()
+  # plt.title('Quantization error of {} * {} model'.format(size, size))
+  # fig_path = os.path.join(os.path.dirname(__file__), 'images/model_{}*{}.png'.format(size, size))
+  # plt.savefig(fig_path)
+  # plt.clf()
+
+  # Histogram of nearest distance
+  # plt.hist(nearest_distance_with_bias)
+  
+  fig, (ax1, ax2) = plt.subplots(nrows = 1, ncols = 2, figsize = (12,8))
+  ax1.hist(nearest_distance_with_bias, edgecolor = 'black')
+  ax1.set_title('With bias')
+  ax2.hist(nearest_distance_without_bias, edgecolor = 'black')
+  ax2.set_title('Without bias')
+  fig.suptitle('Histogram of distance of {} * {} model (Gaussian neighborhood)'.format(size, size))
+  # plt.show()
+  fig_path = os.path.join(os.path.dirname(__file__), 'images/histogram_model_{}*{}.png'.format(size, size))
   plt.savefig(fig_path)
-  plt.clf()
