@@ -40,6 +40,19 @@ lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
                   neighborhood='gaussian', label_weight = 'exponential_distance')
 lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, second_num_iteration = 4000, second_epoch_size = 400)
 
+# Discrete training
+# n_training_samples = len(X_train)
+# lvq.pca_weights_init(X_train)
+# for i in range (10):
+#   s = np.arange(n_training_samples)
+#   np.random.shuffle(s)
+#   lvq.train_competitive(X_train[s], num_iteration = 400, epoch_size = 400)
+# lvq.label_neurons(X_train, y_train)
+# for i in range (10):
+#   s = np.arange(n_training_samples)
+#   np.random.shuffle(s)
+#   lvq.train_batch(X_train[s], y_train[s], num_iteration = 400, epoch_size = 400)
+
 # Predict the result
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit='winner_neuron')
 y_pred = encoder.inverse_transform(y_pred)
