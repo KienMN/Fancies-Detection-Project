@@ -1,4 +1,4 @@
-# Test single SSOM model for data of HT sensor
+# Test single SSOM model for data of AReM dataset
 
 # Adding path to libraries
 import os
@@ -13,15 +13,15 @@ import matplotlib.pyplot as plt
 # Importing the dataset
 from sklearn.preprocessing import MinMaxScaler
 n_sample = 0
-train_filepath = os.path.join(os.path.dirname(__file__), 'data/HT_Sensor_train_dataset.csv')
-test_filepath = os.path.join(os.path.dirname(__file__), 'data/HT_Sensor_test_dataset.csv')
+train_filepath = os.path.join(os.path.dirname(__file__), 'data/AReM_train_dataset.csv')
+test_filepath = os.path.join(os.path.dirname(__file__), 'data/AReM_test_dataset.csv')
 
 train_dataset = pd.read_csv(train_filepath)
 test_dataset = pd.read_csv(test_filepath)
 
-X_train = train_dataset.iloc[:, 2: -1].values
+X_train = train_dataset.iloc[:, 1: -1].values
 y_train = train_dataset.iloc[:, -1].values.astype(np.int8)
-X_test = test_dataset.iloc[:, 2: -1].values
+X_test = test_dataset.iloc[:, 1: -1].values
 y_test = test_dataset.iloc[:, -1].values.astype(np.int8)
 
 # Statistic
@@ -54,7 +54,7 @@ print(n_models)
 # Training the SSOM model
 if args.n_models == 1:
   from detection.competitive_learning_network.lvq_network import AdaptiveLVQ
-  ssom = AdaptiveLVQ(n_rows = 10, n_cols = 10, learning_rate = 0.5, decay_rate = 1,
+  ssom = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.5, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 3, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train)
@@ -91,7 +91,7 @@ elif args.n_models == 2:
   y_train_2 = y_train[train_size:]
   
   from detection.competitive_learning_network.lvq_network import AdaptiveLVQ
-  ssom1 = AdaptiveLVQ(n_rows = 10, n_cols = 10, learning_rate = 0.75, decay_rate = 1,
+  ssom1 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.75, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_1)
@@ -106,7 +106,7 @@ elif args.n_models == 2:
     np.random.shuffle(s)
     ssom1.train_batch(X_train_1[s], y_train_1[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
 
-  ssom2 = AdaptiveLVQ(n_rows = 10, n_cols = 10, learning_rate = 0.5, decay_rate = 1,
+  ssom2 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.5, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_2)
@@ -163,7 +163,7 @@ elif args.n_models == 3:
   y_train_3 = y_train[2 * train_size:]
 
   from detection.competitive_learning_network.lvq_network import AdaptiveLVQ
-  ssom1 = AdaptiveLVQ(n_rows = 10, n_cols = 10, learning_rate = 0.5, decay_rate = 1,
+  ssom1 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.5, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_1)
@@ -178,7 +178,7 @@ elif args.n_models == 3:
     np.random.shuffle(s)
     ssom1.train_batch(X_train_1[s], y_train_1[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
 
-  ssom2 = AdaptiveLVQ(n_rows = 10, n_cols = 10, learning_rate = 0.75, decay_rate = 1,
+  ssom2 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.75, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_2)
@@ -193,7 +193,7 @@ elif args.n_models == 3:
     np.random.shuffle(s)
     ssom2.train_batch(X_train_2[s], y_train_2[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
 
-  ssom3 = AdaptiveLVQ(n_rows = 10, n_cols = 10, learning_rate = 0.75, decay_rate = 1,
+  ssom3 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.75, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_3)
