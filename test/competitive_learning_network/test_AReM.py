@@ -24,6 +24,17 @@ y_train = train_dataset.iloc[:, -1].values.astype(np.int8)
 X_test = test_dataset.iloc[:, 1: -1].values
 y_test = test_dataset.iloc[:, -1].values.astype(np.int8)
 
+# filepath = os.path.join(os.path.dirname(__file__), 'data/SD-3X_rocktype.csv')
+# dataset = pd.read_csv(filepath)
+# X = dataset.iloc[:, :-1].values
+# y = dataset.iloc[:, -1].values.astype(np.int8)
+# from sklearn.preprocessing import LabelEncoder
+# encoder = LabelEncoder()
+# y = encoder.fit_transform(y)
+
+# from sklearn.model_selection import train_test_split
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
+
 # Statistic
 print('Total train samples:', len(y_train))
 n_classes = len(np.unique(y_train))
@@ -54,17 +65,17 @@ print(n_models)
 # Training the SSOM model
 if args.n_models == 1:
   from detection.competitive_learning_network.lvq_network import AdaptiveLVQ
-  ssom = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.5, decay_rate = 1,
+  ssom = AdaptiveLVQ(n_rows = 6, n_cols = 6, learning_rate = 0.5, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 3, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train)
   ssom.pca_weights_init(X_train)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom.train_competitive(X_train[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
   ssom.label_neurons(X_train, y_train)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom.train_batch(X_train[s], y_train[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
@@ -91,32 +102,32 @@ elif args.n_models == 2:
   y_train_2 = y_train[train_size:]
   
   from detection.competitive_learning_network.lvq_network import AdaptiveLVQ
-  ssom1 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.75, decay_rate = 1,
+  ssom1 = AdaptiveLVQ(n_rows = 6, n_cols = 6, learning_rate = 0.75, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_1)
   ssom1.pca_weights_init(X_train_1)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom1.train_competitive(X_train_1[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
   ssom1.label_neurons(X_train_1, y_train_1)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom1.train_batch(X_train_1[s], y_train_1[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
 
-  ssom2 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.5, decay_rate = 1,
+  ssom2 = AdaptiveLVQ(n_rows = 6, n_cols = 6, learning_rate = 0.5, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_2)
   ssom2.pca_weights_init(X_train_2)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom2.train_competitive(X_train_2[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
   ssom2.label_neurons(X_train_2, y_train_2)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom2.train_batch(X_train_2[s], y_train_2[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
@@ -163,47 +174,47 @@ elif args.n_models == 3:
   y_train_3 = y_train[2 * train_size:]
 
   from detection.competitive_learning_network.lvq_network import AdaptiveLVQ
-  ssom1 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.5, decay_rate = 1,
+  ssom1 = AdaptiveLVQ(n_rows = 6, n_cols = 6, learning_rate = 0.5, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_1)
   ssom1.pca_weights_init(X_train_1)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom1.train_competitive(X_train_1[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
   ssom1.label_neurons(X_train_1, y_train_1)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom1.train_batch(X_train_1[s], y_train_1[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
 
-  ssom2 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.75, decay_rate = 1,
+  ssom2 = AdaptiveLVQ(n_rows = 6, n_cols = 6, learning_rate = 0.75, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_2)
   ssom2.pca_weights_init(X_train_2)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom2.train_competitive(X_train_2[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
   ssom2.label_neurons(X_train_2, y_train_2)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom2.train_batch(X_train_2[s], y_train_2[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
 
-  ssom3 = AdaptiveLVQ(n_rows = 20, n_cols = 20, learning_rate = 0.75, decay_rate = 1,
+  ssom3 = AdaptiveLVQ(n_rows = 6, n_cols = 6, learning_rate = 0.75, decay_rate = 1,
                     bias = True, weights_init = 'pca', sigma = 2, sigma_decay_rate = 1,
                     neighborhood = 'bubble', label_weight = 'inverse_distance')
   n_training_samples = len(X_train_3)
   ssom3.pca_weights_init(X_train_3)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom3.train_competitive(X_train_3[s], num_iteration = n_training_samples, epoch_size = n_training_samples)
   ssom3.label_neurons(X_train_3, y_train_3)
-  for i in range (5):
+  for i in range (1):
     s = np.arange(n_training_samples)
     np.random.shuffle(s)
     ssom3.train_batch(X_train_3[s], y_train_3[s], num_iteration = n_training_samples, epoch_size = n_training_samples)

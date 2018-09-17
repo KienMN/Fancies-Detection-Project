@@ -1,7 +1,7 @@
-from .lvq_network import LvqNetwork, LvqNetworkWithNeighborhood, AdaptiveLVQ
+from .lvq_network import TheoreticalLvq, LvqNetworkWithNeighborhood, AdaptiveLVQ
 from .minisom import MiniSom
 
-__all__ = ['LvqNetwork',
+__all__ = ['TheoreticalLvq',
           'LvqNetworkWithNeighborhood',
           'AdaptiveLVQ',
           'MiniSom']

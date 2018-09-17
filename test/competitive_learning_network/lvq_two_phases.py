@@ -10,9 +10,9 @@ import numpy as np
 import pandas as pd
 
 # Importing the dataset
-filepath = os.path.join(os.path.dirname(__file__), 'data/SD-3X_rocktype.csv')
+filepath = os.path.join(os.path.dirname(__file__), 'data/processed_15_1-SD-1X_LQC.csv')
 dataset = pd.read_csv(filepath)
-X = dataset.iloc[:, 0: -1].values
+X = dataset.iloc[:, 2: -1].values
 y = dataset.iloc[:, -1].values.astype(np.int8)
 
 # Spliting the dataset into the Training set and the Test set
@@ -34,7 +34,7 @@ y_train = encoder.fit_transform(y_train)
 from detection.competitive_learning_network import AdaptiveLVQ
 lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
                   learning_rate = 0.5, decay_rate = 1,
-                  sigma = 1, sigma_decay_rate = 1,
+                  sigma = 2, sigma_decay_rate = 1,
                   # weights_normalization = "length",
                   bias = False, weights_init = 'pca',
                   neighborhood='gaussian', label_weight = 'exponential_distance')
@@ -54,7 +54,7 @@ lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, se
 #   lvq.train_batch(X_train[s], y_train[s], num_iteration = 400, epoch_size = 400)
 
 # Predict the result
-y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit='winner_neuron')
+y_pred, confidence_score = lvq.predict(X_test, confidence = 1)
 y_pred = encoder.inverse_transform(y_pred)
 
 # Making confusion matrix
@@ -68,9 +68,9 @@ for i in range (len(cm)):
   true_result += cm[i][i]
 print(true_result / np.sum(cm))
 
-print(lvq._winner_count)
-print(lvq._competitive_layer_weights)
-print(lvq._biases)
+# print(lvq._winner_count)
+# print(lvq._competitive_layer_weights)
+# print(lvq._biases)
 # Visualization
 # from detection.competitive_learning_network.visualization import network_mapping, feature_distribution
 
