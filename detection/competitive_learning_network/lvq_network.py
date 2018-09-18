@@ -61,6 +61,9 @@ class TheoreticalLvq(object):
     # Epoch
     self._current_epoch = 0
 
+    # Information
+    self._info = {}
+
     if learning_rate_decay_function:
       self._learning_rate_decay_function = learning_rate_decay_function
     else:
@@ -88,7 +91,7 @@ class TheoreticalLvq(object):
       self._weights_init = 'random'
     
     if verbose > 0:
-      print('Theoretical LVQ Model:')
+      print('Model:')
       print('Number of subclasses: {}; Learning rate: {}; Decay rate: {};'.format(n_subclass, learning_rate, decay_rate))
       if learning_rate_decay_function:
         print('Using user-defined learning rate decay function.')
@@ -101,7 +104,7 @@ class TheoreticalLvq(object):
           print('Using default bias function.')
       else:
         print('No conscience applied.')
-      if weights_init == 'sample' or weights_init == 'random':
+      if weights_init == 'sample' or weights_init == 'random' or weights_init == 'pca':
         print('Using {} weights initialization.'.format(weights_init))
       else:
         print('Warning: Wrong weights initialization. Using random weights initialization instead.')
@@ -465,29 +468,98 @@ class LvqNetworkWithNeighborhood(TheoreticalLvq):
   sigma_decay_rate : float, default: 1
     Reduction rate of sigma after number of iterations.
 
-  neighborhood : option ["bubble", "gaussian"], default: None
+  neighborhood : option ["bubble", "gaussian", None], default: None
     Function that determines coefficient for neighbors of winner neuron in competitive layer.
+
+  verbose : int, default: 1
+    Setting verbose to any positive number for verbosity
   """
   def __init__(self, n_rows, n_cols,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias = True, bias_function = None, weights_normalization = None, weights_init = None,
+              bias = True, bias_function = None, weights_normalization = None, weights_init = 'sample',
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
-              neighborhood = None):
+              neighborhood = None, verbose = 1):
     super().__init__(n_subclass = n_rows * n_cols,
                     learning_rate = learning_rate, learning_rate_decay_function = learning_rate_decay_function,
                     decay_rate = decay_rate,
                     bias = bias, bias_function = bias_function, weights_normalization = weights_normalization,
-                    weights_init = weights_init)
+                    weights_init = weights_init, verbose = verbose)
     self._n_rows_subclass = n_rows
     self._n_cols_subclass = n_cols
     self._radius = sigma
     self._radius_decay_rate = sigma_decay_rate
-    self._neighborhood_function = neighborhood
+    if neighborhood == "bubble" or neighborhood == "gaussian":
+      self._neighborhood_function = neighborhood
+    else:
+      self._neighborhood_function = None
     if sigma_decay_function:
       self._radius_decay_function = sigma_decay_function
     else:
       self._radius_decay_function = default_radius_decay_function
+
+    if verbose > 0: 
+      print('Size of network: {} x {}; Sigma: {}; Sigma decay rate: {}.'.format(n_rows, n_cols, sigma, sigma_decay_rate))
+      if sigma_decay_function:
+        print('Using user-defined sigma decay function.')
+      else:
+        print('Using default sigma decay function.')
+      if neighborhood == "bubble" or neighborhood == "gaussian":
+        print('Using {} neighborhood.'.format(neighborhood))
+      elif neighborhood is None:
+        print('No neighborhood is applied.')
+      else:
+        print('Can not detect type of neighborhood. No neighborhood is applied.')
   
+  def update(self, x, epoch, y = None):
+    """Updates the weights of competitive layer and biasees value.
+    
+    Parameters
+    ----------
+    x : 1D numpy array shape (n_features,)
+      Input vector where n_features is the number of features.
+
+    y : int
+      Class to which input vector is relative. If y is not given, weights of competitive layer will be updated unsupervised.
+
+    epoch : int
+      Sequence number of epoch iterations, after each iterations, learning rate and sigma will be recalculated.
+
+    Returns
+    -------
+    self : object
+      Returns self.
+    """
+    win = self.winner(x)
+    win_idx = argmax(win)
+    self._biases = self._bias_function(self._biases, win_idx)
+    self._winner_count[win_idx] += 1
+    alpha = self._learning_rate_decay_function(self._learning_rate, epoch, self._decay_rate)
+    beta = alpha / 3
+    radius = self._radius_decay_function(self._radius, epoch, self._radius_decay_rate)
+    correlation = self.neighborhood(win_idx, radius)
+    is_class = None
+    if y is not None:
+      is_class = self.is_class(y)
+    else:
+      is_class = ones(self._n_subclass)
+    for i in range(self._n_subclass):
+      if is_class[i] == 1:
+        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * alpha * correlation[i] * (x - self._competitive_layer_weights[i])
+      elif is_class[i] == -1:
+        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * beta * correlation[i] * (x - self._competitive_layer_weights[i])
+      # Limiting the weights
+      # if self._weights_init == 'random':
+      #   self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i])
+      # else:
+      #   self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i], feature_range = feature_range)
+      
+      # Normalizing the weights
+      if self._weights_normalization == "length":
+        norm = fast_norm(self._competitive_layer_weights[i])
+        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
+
+    return self
+
   def neighborhood(self, win_idx, radius):
     """Computes correlation between each neurons and winner neuron.
     
@@ -558,14 +630,16 @@ class LvqNetworkWithNeighborhood(TheoreticalLvq):
       Returns self.
     """
     self._competitive_layer_weights = zeros((self._n_subclass, data.shape[1]))
+    # Pca parameters
     pca_number_of_components = None
     coord = None
+
     if self._n_cols_subclass == 1 or self._n_rows_subclass == 1 or data.shape[1] == 1:
       pca_number_of_components = 1
-      if self._n_cols_subclass == self._n_rows_subclass:
+      if self._n_cols_subclass == 1 and self._n_rows_subclass == 1:
         coord = array([[1], [0]])
-        print(coord)
-        print(coord[0][0])
+        # print(coord)
+        # print(coord[0][0])
       else:  
         coord = zeros((self._n_subclass, 1))
         for i in range (self._n_subclass):
@@ -576,6 +650,7 @@ class LvqNetworkWithNeighborhood(TheoreticalLvq):
       for i in range (self._n_subclass):
         coord[i][0] = i // self._n_cols_subclass
         coord[i][1] = i % self._n_cols_subclass
+    
     mx = amax(coord, axis = 0)
     mn = amin(coord, axis = 0)
     coord = (coord - mn) / (mx - mn)
@@ -583,7 +658,8 @@ class LvqNetworkWithNeighborhood(TheoreticalLvq):
     pca = PCA(n_components = pca_number_of_components)
     pca.fit(data)
     eigvec = pca.components_
-    print(eigvec)
+    # print(eigvec)
+    # print(coord)
     for i in range (self._n_subclass):
       for j in range (eigvec.shape[0]):
         self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + coord[i][j] * eigvec[j]
@@ -593,57 +669,6 @@ class LvqNetworkWithNeighborhood(TheoreticalLvq):
       if self._weights_normalization == "length":
         norm = fast_norm(self._competitive_layer_weights[i])
         self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
-
-    return self
-
-  def update(self, x, epoch, y = None):
-    """Updates the weights of competitive layer and biasees value.
-    
-    Parameters
-    ----------
-    x : 1D numpy array shape (n_features,)
-      Input vector where n_features is the number of features.
-
-    y : int
-      Class to which input vector is relative. If y is not given, weights of competitive layer will be updated unsupervised.
-
-    epoch : int
-      Sequence number of epoch iterations, after each iterations, learning rate and sigma will be recalculated.
-
-    Returns
-    -------
-    self : object
-      Returns self.
-    """
-    win = self.winner(x)
-    win_idx = argmax(win)
-    self._biases = self._bias_function(self._biases, win_idx)
-    self._winner_count[win_idx] += 1
-    alpha = self._learning_rate_decay_function(self._learning_rate, epoch, self._decay_rate)
-    beta = alpha / 3
-    radius = self._radius_decay_function(self._radius, epoch, self._radius_decay_rate)
-    correlation = self.neighborhood(win_idx, radius)
-    is_class = None
-    if y is not None:
-      is_class = self.is_class(y)
-    else:
-      is_class = ones(self._n_subclass)
-    for i in range(self._n_subclass):
-      if is_class[i] == 1:
-        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * alpha * correlation[i] * (x - self._competitive_layer_weights[i])
-      elif is_class[i] == -1:
-        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] + is_class[i] * beta * correlation[i] * (x - self._competitive_layer_weights[i])
-      # Limiting the weights
-      # if self._weights_init == 'random':
-      #   self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i])
-      # else:
-      #   self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i], feature_range = feature_range)
-      
-      # Normalizing the weights
-      if self._weights_normalization == "length":
-        norm = fast_norm(self._competitive_layer_weights[i])
-        self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
-
     return self
 
 class AdaptiveLVQ(LvqNetworkWithNeighborhood):
