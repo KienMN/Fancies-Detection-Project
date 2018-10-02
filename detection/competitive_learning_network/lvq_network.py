@@ -721,19 +721,22 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
 
   label_weight : option ['uniform', 'exponential_distance', 'inverse_distance'], default: None
     Strategy to label class name for neurons in the competitive layer
+
+  verbose : int, default: 1
+    Setting verbose to any positive number for verbosity
   """
   def __init__(self, n_rows, n_cols,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
               bias = True, bias_function = None, weights_normalization = None, weights_init = None,
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
-              neighborhood = None, label_weight = None):
+              neighborhood = None, label_weight = None, verbose = 1):
     super().__init__(n_rows = n_rows, n_cols = n_cols,
                     learning_rate = learning_rate, learning_rate_decay_function = learning_rate_decay_function,
                     decay_rate = decay_rate,
                     bias = bias, bias_function = bias_function,
                     weights_normalization = weights_normalization, weights_init = weights_init,
                     sigma = sigma, sigma_decay_function = sigma_decay_function, sigma_decay_rate = sigma_decay_rate,
-                    neighborhood = neighborhood)
+                    neighborhood = neighborhood, verbose = verbose)
     self._label_weight = label_weight
 
   def train_competitive(self, X, num_iteration, epoch_size):

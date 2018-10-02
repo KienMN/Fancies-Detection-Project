@@ -32,7 +32,7 @@ y_train = encoder.fit_transform(y_train)
 
 # Training the LVQ
 from detection.competitive_learning_network import AdaptiveLVQ
-lvq = AdaptiveLVQ(n_rows = 9, n_cols = 9,
+lvq = AdaptiveLVQ(n_rows = 10, n_cols = 10,
                   learning_rate = 0.5, decay_rate = 1,
                   sigma = 2, sigma_decay_rate = 1,
                   # weights_normalization = "length",
