@@ -24,8 +24,8 @@ X_train = sc_X.fit_transform(X_train)
 X_test = sc_X.transform(X_test)
 
 # Fitting Linear regression to the training test
-from sklearn.tree import DecisionTreeRegressor
-regressor = DecisionTreeRegressor(random_state = 0)
+from sklearn.svm import SVR
+regressor = SVR(kernel = 'rbf')
 regressor.fit(X_train, y_train)
 
 # Predicting the result
