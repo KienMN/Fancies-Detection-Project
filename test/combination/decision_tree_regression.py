@@ -1,4 +1,4 @@
-# Testing linear regression model
+# Testing linear regression model on BH dataset
 
 # Adding path
 import os
@@ -20,19 +20,13 @@ y = dataset.iloc[:, -1].values
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
 
-# Fitting Polynomial regression to the dataset
-from sklearn.preprocessing import PolynomialFeatures
-poly_reg = PolynomialFeatures(degree = 4)
-X_train_poly = poly_reg.fit_transform(X_train)
-X_test_poly = poly_reg.transform(X_test)
-
-# Fitting Linear regression to the dataset
-from sklearn.linear_model import LinearRegression
-regressor = LinearRegression()
-regressor.fit(X_train_poly, y_train)
+# Fitting Linear regression to the training test
+from sklearn.tree import DecisionTreeRegressor
+regressor = DecisionTreeRegressor(random_state = 0)
+regressor.fit(X_train, y_train)
 
 # Predicting the result
-y_pred = regressor.predict(X_test_poly)
+y_pred = regressor.predict(X_test)
 
 # Evaluating the result
 from sklearn.metrics import r2_score, mean_squared_error
