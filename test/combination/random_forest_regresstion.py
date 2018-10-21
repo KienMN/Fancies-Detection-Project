@@ -8,14 +8,14 @@ import numpy as np
 import pandas as pd
 
 # Importing the dataset
-filepath = os.path.join(os.path.dirname(__file__), 'data/filtered_RBA-12P-ST4.csv')
+filepath = os.path.join(os.path.dirname(__file__), 'data/filtered_RB-1X.csv')
 dataset = pd.read_csv(filepath)
 X = dataset.iloc[:, 1: -1].values
 y = dataset.iloc[:, -1].values
 
 # Splitting the dataset into the training and the test set
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.35, random_state = 0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.35, random_state = 0, shuffle = False)
 
 # Feature scaling
 from sklearn.preprocessing import MinMaxScaler
