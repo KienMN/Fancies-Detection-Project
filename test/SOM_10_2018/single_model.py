@@ -38,12 +38,12 @@ lvq = AdaptiveLVQ(n_rows = 12, n_cols = 12,
                   # weights_normalization = "length",
                   bias = False, weights_init = 'pca',
                   neighborhood='gaussian', label_weight = 'inverse_distance')
-lvq.fit(X_train, y_train, first_num_iteration = 15000, first_epoch_size = 400, second_num_iteration = 15000, second_epoch_size = 400)
+lvq.fit(X_train, y_train, first_num_iteration = 100, first_epoch_size = 400, second_num_iteration = 100, second_epoch_size = 400)
 
 # Predict the result
-y_pred, confidence_score = lvq.predict(X_test, confidence = 1)
+y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'class_distance')
 y_pred = encoder.inverse_transform(y_pred)
-
+print('confidence', confidence_score)
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix
 cm = confusion_matrix(y_test, y_pred)
