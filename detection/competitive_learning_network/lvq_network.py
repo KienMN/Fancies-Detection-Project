@@ -815,6 +815,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
         self._n_neurons_each_classes[class_name] += 1
         self._linear_layer_weights[class_name][i] = 1
+    
     elif self._label_weight == 'inverse_distance':
       neurons_weight = zeros((self._n_subclass, self._n_class))
       m = len(X)
@@ -834,6 +835,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
         self._n_neurons_each_classes[class_name] += 1
         self._linear_layer_weights[class_name][i] = 1
+    
     elif self._label_weight == 'uniform':
       class_win = zeros((self._n_subclass, self._n_class))
       m = len(X)
@@ -850,6 +852,40 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
           self._neurons_confidence[idx] = [1 / self._n_class] * self._n_class
         else:
           self._neurons_confidence[idx] = class_win[idx] / sum(class_win[idx])
+    
+    elif self._label_weight == 'inverse_distance_to_classes':
+      n_sample = len(X)
+      for idx in range (self._n_subclass):
+        distances = array([])
+        classes = array([]).astype(np.int8)
+        
+        for j in range (n_sample):
+          x = X[j]
+          distance = euclidean_distance(x, self._competitive_layer_weights[idx]) - self._biases[idx]
+          class_name = y[j]
+          distances = append(distances, distance)
+          classes = append(classes, int(class_name))
+        
+        neighbors = argsort(distances)
+        j = 0
+        distance_to_classes = np.zeros(self._n_class)
+        
+        while np.prod(distance_to_classes) == 0 and j < n_sample:
+          if distance_to_classes[classes[neighbors[j]]] == 0:
+            distance_to_classes[classes[neighbors[j]]] = distances[neighbors[j]]
+          j += 1
+        
+        total_sum = 0
+        for k in range (self._n_class):
+          if distance_to_classes[k] != 0:
+            total_sum += float(1 / distance_to_classes[k])
+        
+        for k in range (self._n_class):
+          self._neurons_confidence[idx, k] = (1 / distance_to_classes[k]) / total_sum
+
+        l = np.argmax(self._neurons_confidence[idx])
+        self._linear_layer_weights[l, idx] = 1
+
     else:
       n_subclass_per_class = self._n_subclass // self._n_class
       for i in range (self._n_class):
@@ -928,7 +964,43 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     self.label_neurons(X, y)
     # Phase 2: Training using LVQ concept
     self.train_batch(X, y, second_num_iteration, second_epoch_size)
+    self.recompute_neurons_confidence(X, y)
 
+    return self
+
+  def recompute_neurons_confidence(self, X, y):
+    n_sample = len(X)
+    for idx in range (self._n_subclass):
+      distances = array([])
+      classes = array([]).astype(np.int8)
+      
+      for j in range (n_sample):
+        x = X[j]
+        distance = euclidean_distance(x, self._competitive_layer_weights[idx]) - self._biases[idx]
+        class_name = y[j]
+        distances = append(distances, distance)
+        classes = append(classes, int(class_name))
+      
+      neighbors = argsort(distances)
+      j = 0
+      distance_to_classes = np.zeros(self._n_class)
+      
+      while np.prod(distance_to_classes) == 0 and j < n_sample:
+        if distance_to_classes[classes[neighbors[j]]] == 0:
+          distance_to_classes[classes[neighbors[j]]] = distances[neighbors[j]]
+        j += 1
+      
+      total_sum = 0
+      for k in range (self._n_class):
+        if distance_to_classes[k] != 0:
+          total_sum += float(1 / distance_to_classes[k])
+      
+      for k in range (self._n_class):
+        self._neurons_confidence[idx, k] = (1 / distance_to_classes[k]) / total_sum
+
+      l = np.argmax(self._neurons_confidence[idx])
+      self._linear_layer_weights[l, idx] = 1
+    
     return self
 
   # def predict(self, X, confidence = False):
@@ -992,9 +1064,6 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     confidence_score : 1D numpy array, shape (n_samples,)
       If confidence is true, returns confidence scores of prediction made.
     """
-    # Check criterion's validity
-    # if crit != 'winner_neuron':
-    #   crit = 'distance'
 
     # If confidence score is included
     if confidence and crit == 'distance':
@@ -1012,44 +1081,6 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     
         # Computing confidence score
         confidence_score = append(confidence_score, self._neurons_confidence[win_idx, y_i])  
-      return y_pred, confidence_score
-    elif confidence and crit == 'class_distance':
-      y_pred = array([]).astype(np.int8)
-      confidence_score = array([])
-      n_sample = len(X)
-      for i in range (n_sample):
-        x = X[i]
-        win = self.winner(x)
-        win_idx = argmax(win)
-        y_i = int(self.classify(win))
-        y_pred = append(y_pred, y_i)
-        
-        # Computing confidence score
-        distances = array([])
-        classes = array([]).astype(np.int8)
-        
-        for j in range (self._n_subclass):
-          distance = euclidean_distance(x, self._competitive_layer_weights[j]) - self._biases[j]
-          class_name = argmax(self._linear_layer_weights[:, j])
-          distances = append(distances, distance)
-          classes = append(classes, int(class_name))
-        
-        neighbors = argsort(distances)
-        j = 0
-        distance_to_classes = np.zeros(self._n_class)
-        while np.prod(distance_to_classes) == 0 and j < self._n_subclass:
-          if distance_to_classes[classes[neighbors[j]]] == 0:
-            distance_to_classes[classes[neighbors[j]]] = distances[neighbors[j]]
-          j += 1
-        
-        total_sum = 0
-        for k in range (self._n_class):
-          if distance_to_classes[k] != 0:
-            total_sum += float(1 / distance_to_classes[k])
-        
-        score = float((1 / distance_to_classes[y_i]) / total_sum)
-        confidence_score = np.append(confidence_score, score)
-
       return y_pred, confidence_score
 
     # If confidence score is not included

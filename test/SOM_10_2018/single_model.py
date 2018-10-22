@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 # Importing the dataset
-filepath = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-4X.csv')
+filepath = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-1X.csv')
 dataset = pd.read_csv(filepath)
 X = dataset.iloc[:, 1: -1].values
 y = dataset.iloc[:, -1].values.astype(np.int8)
@@ -37,11 +37,11 @@ lvq = AdaptiveLVQ(n_rows = 15, n_cols = 15,
                   sigma = 2, sigma_decay_rate = 1,
                   # weights_normalization = "length",
                   bias = False, weights_init = 'pca',
-                  neighborhood='bubble', label_weight = 'inverse_distance')
+                  neighborhood='bubble', label_weight = 'inverse_distance_to_classes')
 lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, second_num_iteration = 4000, second_epoch_size = 400)
 
 # Predict the result
-y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'class_distance')
+y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
 y_pred = encoder.inverse_transform(y_pred)
 print('confidence', confidence_score)
 # Making confusion matrix

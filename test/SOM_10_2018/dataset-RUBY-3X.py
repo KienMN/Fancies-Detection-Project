@@ -25,7 +25,7 @@ sc = joblib.load(scaler_filepath)
 
 # Predicting
 X_test = sc.transform(X)
-y_pred_1, confidence_score_1 = lvq.predict(X_test, confidence = 1, crit = 'class_distance')
+y_pred_1, confidence_score_1 = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
 y_pred_1 = encoder.inverse_transform(y_pred_1)
 
 # Making confusion matrix
@@ -51,7 +51,7 @@ sc = joblib.load(scaler_filepath)
 
 # Predicting
 X_test = sc.transform(X)
-y_pred_2, confidence_score_2 = lvq.predict(X_test, confidence = 1, crit = 'class_distance')
+y_pred_2, confidence_score_2 = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
 y_pred_2 = encoder.inverse_transform(y_pred_2)
 
 # Making confusion matrix
@@ -77,7 +77,7 @@ sc = joblib.load(scaler_filepath)
 
 # Predicting
 X_test = sc.transform(X)
-y_pred_3, confidence_score_3 = lvq.predict(X_test, confidence = 1, crit = 'class_distance')
+y_pred_3, confidence_score_3 = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
 y_pred_3 = encoder.inverse_transform(y_pred_3)
 
 # Making confusion matrix

@@ -37,11 +37,11 @@ lvq = AdaptiveLVQ(n_rows = 10, n_cols = 10,
                   sigma = 3, sigma_decay_rate = 1,
                   # weights_normalization = "length",
                   bias = False, weights_init = 'pca',
-                  neighborhood='gaussian', label_weight = 'inverse_distance')
+                  neighborhood='gaussian', label_weight = 'inverse_distance_to_classes')
 lvq.fit(X_train, y_train, first_num_iteration = 10000, first_epoch_size = 400, second_num_iteration = 10000, second_epoch_size = 400)
 
 # Predict the result
-y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'class_distance')
+y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
 y_pred = encoder.inverse_transform(y_pred)
 # print('confidence', confidence_score)
 
