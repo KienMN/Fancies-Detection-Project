@@ -993,8 +993,8 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       If confidence is true, returns confidence scores of prediction made.
     """
     # Check criterion's validity
-    if crit != 'winner_neuron':
-      crit = 'distance'
+    # if crit != 'winner_neuron':
+    #   crit = 'distance'
 
     # If confidence score is included
     if confidence and crit == 'distance':
@@ -1009,10 +1009,48 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         win_idx = argmax(win)
         y_i = int(self.classify(win))
         y_pred = append(y_pred, y_i)
-
-        # Computing confidence score
-        confidence_score = append(confidence_score, self._neurons_confidence[win_idx, y_i])
-      return y_pred, confidence_score
     
+        # Computing confidence score
+        confidence_score = append(confidence_score, self._neurons_confidence[win_idx, y_i])  
+      return y_pred, confidence_score
+    elif confidence and crit == 'class_distance':
+      y_pred = array([]).astype(np.int8)
+      confidence_score = array([])
+      n_sample = len(X)
+      for i in range (n_sample):
+        x = X[i]
+        win = self.winner(x)
+        win_idx = argmax(win)
+        y_i = int(self.classify(win))
+        y_pred = append(y_pred, y_i)
+        
+        # Computing confidence score
+        distances = array([])
+        classes = array([]).astype(np.int8)
+        
+        for j in range (self._n_subclass):
+          distance = euclidean_distance(x, self._competitive_layer_weights[j]) - self._biases[j]
+          class_name = argmax(self._linear_layer_weights[:, j])
+          distances = append(distances, distance)
+          classes = append(classes, int(class_name))
+        
+        neighbors = argsort(distances)
+        j = 0
+        distance_to_classes = np.zeros(self._n_class)
+        while np.prod(distance_to_classes) == 0 and j < self._n_subclass:
+          if distance_to_classes[classes[neighbors[j]]] == 0:
+            distance_to_classes[classes[neighbors[j]]] = distances[neighbors[j]]
+          j += 1
+        
+        total_sum = 0
+        for k in range (self._n_class):
+          if distance_to_classes[k] != 0:
+            total_sum += float(1 / distance_to_classes[k])
+        
+        score = float((1 / distance_to_classes[y_i]) / total_sum)
+        confidence_score = np.append(confidence_score, score)
+
+      return y_pred, confidence_score
+
     # If confidence score is not included
     return super().predict(X)

@@ -17,7 +17,7 @@ y = dataset.iloc[:, -1].values.astype(np.int8)
 
 # Spliting the dataset into the Training set and the Test set
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0, shuffle = True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.01, random_state = 0, shuffle = False)
 
 # Feature scaling
 from sklearn.preprocessing import MinMaxScaler
@@ -32,18 +32,19 @@ y_train = encoder.fit_transform(y_train)
 
 # Training the LVQ
 from detection.competitive_learning_network import AdaptiveLVQ
-lvq = AdaptiveLVQ(n_rows = 15, n_cols = 15,
+lvq = AdaptiveLVQ(n_rows = 10, n_cols = 10,
                   learning_rate = 0.5, decay_rate = 1,
-                  sigma = 2, sigma_decay_rate = 1,
+                  sigma = 3, sigma_decay_rate = 1,
                   # weights_normalization = "length",
                   bias = False, weights_init = 'pca',
-                  neighborhood='bubble', label_weight = 'inverse_distance')
-lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, second_num_iteration = 4000, second_epoch_size = 400)
+                  neighborhood='gaussian', label_weight = 'inverse_distance')
+lvq.fit(X_train, y_train, first_num_iteration = 10000, first_epoch_size = 400, second_num_iteration = 10000, second_epoch_size = 400)
 
 # Predict the result
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'class_distance')
 y_pred = encoder.inverse_transform(y_pred)
-print('confidence', confidence_score)
+# print('confidence', confidence_score)
+
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix
 cm = confusion_matrix(y_test, y_pred)
@@ -54,3 +55,12 @@ true_result = 0
 for i in range (len(cm)):
   true_result += cm[i][i]
 print(true_result / np.sum(cm))
+
+# Dumping the models
+from sklearn.externals import joblib
+model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/model-RUBY-4X.sav')
+label_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/label-RUBY-4X.sav')
+scaler_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/scaler-RUBY-4X.sav')
+joblib.dump(lvq, model_filepath)
+joblib.dump(encoder, label_filepath)
+joblib.dump(sc, scaler_filepath)
