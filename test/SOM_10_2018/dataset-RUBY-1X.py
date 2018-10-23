@@ -124,3 +124,81 @@ true_result = 0
 for i in range (len(cm)):
   true_result += cm[i][i]
 print(true_result / np.sum(cm))
+
+# Loading trained model
+from sklearn.externals import joblib
+model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/model-SOM-RUBY-2X.sav')
+label_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/label-SOM-RUBY-2X.sav')
+scaler_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/scaler-SOM-RUBY-2X.sav')
+
+lvq = joblib.load(model_filepath)
+encoder = joblib.load(label_filepath)
+sc = joblib.load(scaler_filepath)
+
+# Predicting
+X_test = sc.transform(X)
+y_pred_1, confidence_score_1 = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
+y_pred_1 = encoder.inverse_transform(y_pred_1)
+
+# Making confusion matrix
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y, y_pred_1)
+
+# Printing the confusion matrix
+print(cm)
+true_result = 0
+for i in range (len(cm)):
+  true_result += cm[i][i]
+print(true_result / np.sum(cm))
+
+# Loading trained model
+from sklearn.externals import joblib
+model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/model-SOM-RUBY-3X.sav')
+label_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/label-SOM-RUBY-3X.sav')
+scaler_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/scaler-SOM-RUBY-3X.sav')
+
+lvq = joblib.load(model_filepath)
+encoder = joblib.load(label_filepath)
+sc = joblib.load(scaler_filepath)
+
+# Predicting
+X_test = sc.transform(X)
+y_pred_2, confidence_score_2 = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
+y_pred_2 = encoder.inverse_transform(y_pred_2)
+
+# Making confusion matrix
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y, y_pred_2)
+
+# Printing the confusion matrix
+print(cm)
+true_result = 0
+for i in range (len(cm)):
+  true_result += cm[i][i]
+print(true_result / np.sum(cm))
+
+# Loading trained model
+from sklearn.externals import joblib
+model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/model-SOM-RUBY-4X.sav')
+label_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/label-SOM-RUBY-4X.sav')
+scaler_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/scaler-SOM-RUBY-4X.sav')
+
+lvq = joblib.load(model_filepath)
+encoder = joblib.load(label_filepath)
+sc = joblib.load(scaler_filepath)
+
+# Predicting
+X_test = sc.transform(X)
+y_pred_3, confidence_score_3 = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
+y_pred_3 = encoder.inverse_transform(y_pred_3)
+
+# Making confusion matrix
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y, y_pred_3)
+
+# Printing the confusion matrix
+print(cm)
+true_result = 0
+for i in range (len(cm)):
+  true_result += cm[i][i]
+print(true_result / np.sum(cm))
