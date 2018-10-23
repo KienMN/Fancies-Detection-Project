@@ -43,8 +43,8 @@ test_dataset_name = args.test_dataset
 
 filepath = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-' + test_dataset_name +'.csv')
 test_dataset = pd.read_csv(filepath)
-X_test = dataset.iloc[:, used_cols].values
-y_test = dataset.iloc[:, -1].values.astype(np.int8)
+X_test = test_dataset.iloc[:, used_cols].values
+y_test = test_dataset.iloc[:, -1].values.astype(np.int8)
 
 # Feature scaling
 from sklearn.preprocessing import MinMaxScaler
