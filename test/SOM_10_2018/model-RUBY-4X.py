@@ -38,7 +38,7 @@ lvq = AdaptiveLVQ(n_rows = 10, n_cols = 10,
                   # weights_normalization = "length",
                   bias = False, weights_init = 'pca',
                   neighborhood='gaussian', label_weight = 'inverse_distance_to_classes')
-lvq.fit(X_train, y_train, first_num_iteration = 20000, first_epoch_size = 400, second_num_iteration = 0, second_epoch_size = 400)
+lvq.fit(X_train, y_train, first_num_iteration = 20000, first_epoch_size = 2000, second_num_iteration = 20000, second_epoch_size = 2000)
 
 # Predict the result
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
@@ -58,9 +58,9 @@ print(true_result / np.sum(cm))
 
 # Dumping the models
 from sklearn.externals import joblib
-model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/model-SOM-RUBY-4X.sav')
-label_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/label-SOM-RUBY-4X.sav')
-scaler_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/scaler-SOM-RUBY-4X.sav')
+model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/model-SSOM-RUBY-4X.sav')
+label_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/label-SSOM-RUBY-4X.sav')
+scaler_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/scaler-SSOM-RUBY-4X.sav')
 joblib.dump(lvq, model_filepath)
 joblib.dump(encoder, label_filepath)
 joblib.dump(sc, scaler_filepath)
