@@ -49,9 +49,9 @@ confidence_score = confidence_score.reshape((-1, 1))
 
 for i in range (1, len(models)):
   model_name = models[i]
-  model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/model-SSOM' + model_name + '.sav')
-  label_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/label-SSOM' + model_name + '.sav')
-  scaler_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/scaler-SSOM' + model_name + '.sav')
+  model_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/model-SSOM-' + model_name + '.sav')
+  label_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/label-SSOM-' + model_name + '.sav')
+  scaler_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models/scaler-SSOM-' + model_name + '.sav')
 
   lvq = joblib.load(model_filepath)
   encoder = joblib.load(label_filepath)
