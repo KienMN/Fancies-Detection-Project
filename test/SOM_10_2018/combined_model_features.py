@@ -63,8 +63,8 @@ for i in range (1, len(models)):
   X_test = sc.transform(X_test)
   y_pred_tmp, confidence_score_tmp = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
   y_pred_tmp = encoder.inverse_transform(y_pred_tmp)
-  y_pred = np.append(y_pred, y_pred_tmp.reshape((-1, 1)))
-  confidence_score = np.append(confidence_score, confidence_score_tmp.reshape((-1, 1)))
+  y_pred = np.append(y_pred, y_pred_tmp.reshape((-1, 1)), axis = 1)
+  confidence_score = np.append(confidence_score, confidence_score_tmp.reshape((-1, 1)), axis = 1)
 
 # Combining
 print(confidence_score.shape)
