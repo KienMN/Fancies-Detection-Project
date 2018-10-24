@@ -74,7 +74,7 @@ y_pred_combined = np.array([]).astype(np.int8)
 n_samples = len(y)
 for i in range (n_samples):
   j = np.argmax(confidence_score[i])
-  y_pred_combined = np.append(y_pred_combined, y_pred[i, j])
+  y_pred_combined = np.append(y_pred_combined, j)
 
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix
