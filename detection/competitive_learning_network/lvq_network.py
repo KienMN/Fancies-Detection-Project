@@ -1069,9 +1069,10 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     if confidence and crit == 'distance':
       return super().predict(X, confidence = True)
     elif confidence and crit == 'winner_neuron':
-      y_pred = array([]).astype(np.int8)
-      confidence_score = array([])
       n_sample = len(X)
+      y_pred = array([]).astype(np.int8)
+      confidence_score = np.zeros((n_sample, self._n_class))
+      
       for i in range (n_sample):
         x = X[i]
         win = self.winner(x)
@@ -1080,7 +1081,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         y_pred = append(y_pred, y_i)
     
         # Computing confidence score
-        confidence_score = append(confidence_score, self._neurons_confidence[win_idx, y_i])  
+        confidence_score[i] = self._neurons_confidence[win_idx].copy()
       return y_pred, confidence_score
 
     # If confidence score is not included
