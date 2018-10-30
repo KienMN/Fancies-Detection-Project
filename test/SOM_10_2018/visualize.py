@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
 
@@ -25,5 +27,5 @@ plt.xlabel(fieldnames[id_x])
 plt.ylabel(fieldnames[id_y])
 plt.legend()
 plt.title('Dataset {}: {} and {}'.format(dataset_name, fieldnames[id_x], fieldnames[id_y]))
-figpath = os.path.join(os.path.dirname(__file__), 'images/{}.jpg'.format(dataset_name))
+figpath = os.path.join(os.path.dirname(__file__), 'images/{}.png'.format(dataset_name))
 plt.savefig(figpath)

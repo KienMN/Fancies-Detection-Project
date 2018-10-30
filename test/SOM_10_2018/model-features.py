@@ -23,6 +23,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 # Importing the libraries
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # Importing the Training dataset
@@ -134,7 +136,7 @@ joblib.dump(sc, scaler_filepath)
 
 # Visualizing quantization error
 figname = 'Quantization error of model ' + args.model_name
-figpath = os.path.join(os.path.dirname(__file__), 'images/' + figname)
+figpath = os.path.join(os.path.dirname(__file__), 'images/' + figname + '.png')
 plt.plot(lvq._epochs_set, lvq._qe)
 plt.title(figname)
 plt.savefig(figpath)
