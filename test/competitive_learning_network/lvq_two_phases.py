@@ -54,8 +54,11 @@ lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, se
 #   lvq.train_batch(X_train[s], y_train[s], num_iteration = 400, epoch_size = 400)
 
 # Predict the result
-y_pred, confidence_score = lvq.predict(X_test, confidence = 1)
+y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
 y_pred = encoder.inverse_transform(y_pred)
+# print(confidence_score)
+print(lvq._linear_layer_weights)
+print(confidence_score)
 
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix

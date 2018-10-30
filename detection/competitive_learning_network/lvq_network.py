@@ -999,6 +999,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         self._neurons_confidence[idx, k] = (1 / distance_to_classes[k]) / total_sum
 
       l = np.argmax(self._neurons_confidence[idx])
+      self._linear_layer_weights[:, idx] = 0
       self._linear_layer_weights[l, idx] = 1
     
     return self
@@ -1071,7 +1072,8 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     elif confidence and crit == 'winner_neuron':
       n_sample = len(X)
       y_pred = array([]).astype(np.int8)
-      confidence_score = np.zeros((n_sample, self._n_class))
+      # confidence_score = np.zeros((n_sample, self._n_class))
+      confidence_score = array([])
       
       for i in range (n_sample):
         x = X[i]
@@ -1081,7 +1083,8 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         y_pred = append(y_pred, y_i)
     
         # Computing confidence score
-        confidence_score[i] = self._neurons_confidence[win_idx].copy()
+        # confidence_score[i] = self._neurons_confidence[win_idx].copy()
+        confidence_score = np.append(confidence_score, self._neurons_confidence[win_idx, y_i])
       return y_pred, confidence_score
 
     # If confidence score is not included
