@@ -136,4 +136,5 @@ joblib.dump(sc, scaler_filepath)
 figname = 'Quantization error of model ' + args.model_name
 figpath = os.path.join(os.path.dirname(__file__), 'images/' + figname)
 plt.plot(lvq._epochs_set, lvq._qe)
+plt.title(figname)
 plt.savefig(figpath)
