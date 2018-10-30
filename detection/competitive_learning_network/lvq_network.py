@@ -762,11 +762,13 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       Returns self.
     """
     iteration = 0
+    s = np.arange(len(X))
+    np.random.shuffle(s)
     while iteration < num_iteration:
       idx = iteration % len(X)
       # epoch = iteration // epoch_size
       # self.update(x = X[idx], epoch = epoch)
-      self.update(x = X[idx], epoch = self._current_epoch)
+      self.update(x = X[s[idx]], epoch = self._current_epoch)
       iteration += 1
       if iteration % epoch_size == 0:
         self._current_epoch += 1
