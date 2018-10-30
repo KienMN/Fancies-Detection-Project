@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 # Importing the libraries
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Importing the dataset
 filepath = os.path.join(os.path.dirname(__file__), 'data/processed_15_1-SD-1X_LQC.csv')
@@ -38,7 +39,7 @@ lvq = AdaptiveLVQ(n_rows = 10, n_cols = 10,
                   # weights_normalization = "length",
                   bias = False, weights_init = 'pca',
                   neighborhood='gaussian', label_weight = 'exponential_distance')
-lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, second_num_iteration = 4000, second_epoch_size = 400)
+lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, second_num_iteration = 4000, second_epoch_size = 400, quantization_error = True)
 
 # Discrete training
 # n_training_samples = len(X_train)
@@ -57,8 +58,8 @@ lvq.fit(X_train, y_train, first_num_iteration = 4000, first_epoch_size = 400, se
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
 y_pred = encoder.inverse_transform(y_pred)
 # print(confidence_score)
-print(lvq._linear_layer_weights)
-print(confidence_score)
+print(lvq._qe)
+print(lvq._epochs_set)
 
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix
@@ -70,6 +71,9 @@ true_result = 0
 for i in range (len(cm)):
   true_result += cm[i][i]
 print(true_result / np.sum(cm))
+
+plt.plot(lvq._epochs_set, lvq._qe)
+plt.show()
 
 # print(lvq._winner_count)
 # print(lvq._competitive_layer_weights)

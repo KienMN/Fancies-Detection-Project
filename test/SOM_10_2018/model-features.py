@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 # Importing the libraries
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Importing the Training dataset
 train_dataset_name = [a for a in args.train_dataset.split(',')]
@@ -74,7 +75,7 @@ lvq = AdaptiveLVQ(n_rows = size, n_cols = size,
                   neighborhood = neighborhood, label_weight = 'inverse_distance_to_classes')
 
 # Training phase 1
-lvq.fit(X_train, y_train, first_num_iteration = first_iterations, first_epoch_size = 2000, second_num_iteration = 0, second_epoch_size = 2000)
+lvq.fit(X_train, y_train, first_num_iteration = first_iterations, first_epoch_size = 2000, second_num_iteration = 0, second_epoch_size = 2000, quantization_error = True)
 
 # Predict the result
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
@@ -103,7 +104,7 @@ joblib.dump(encoder, label_filepath)
 joblib.dump(sc, scaler_filepath)
 
 # Trainging phase 2
-lvq.fit(X_train, y_train, first_num_iteration = 0, first_epoch_size = 2000, second_num_iteration = second_iterations, second_epoch_size = 2000)
+lvq.fit(X_train, y_train, first_num_iteration = 0, first_epoch_size = 2000, second_num_iteration = second_iterations, second_epoch_size = 2000, quantization_error = True)
 
 # Predict the result
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
@@ -130,3 +131,9 @@ scaler_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mode
 joblib.dump(lvq, model_filepath)
 joblib.dump(encoder, label_filepath)
 joblib.dump(sc, scaler_filepath)
+
+# Visualizing quantization error
+figname = 'Quantization error of model ' + args.model_name
+figpath = os.path.join(os.path.dirname(__file__), 'images/' + figname)
+plt.plot(lvq._epochs_set, lvq._qe)
+plt.savefig(figpath)

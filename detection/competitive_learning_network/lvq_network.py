@@ -60,6 +60,10 @@ class TheoreticalLvq(object):
 
     # Epoch
     self._current_epoch = 0
+    
+    # Quantization error
+    self._epochs_set = []
+    self._qe = []
 
     # Information
     self._info = {}
@@ -119,7 +123,7 @@ class TheoreticalLvq(object):
     # Initializing winner neurons counter
     self._winner_count = zeros((n_subclass))
 
-  def fit(self, X, y, num_iteration, epoch_size, verbose = 1):
+  def fit(self, X, y, num_iteration, epoch_size, quantization_error = False, verbose = 1):
     """Fit the model according to the given training data.
     
     Parameters
@@ -135,6 +139,9 @@ class TheoreticalLvq(object):
 
     epoch_size : int
       Size of chunk of data, after each chunk of data, parameter such as learning rate and sigma will be recalculated.
+
+    quantization_error: boolean, default: False
+      Determining to save quantization error or not
     
     Returns
     -------
@@ -179,7 +186,7 @@ class TheoreticalLvq(object):
             self._linear_layer_weights[i][j] = 1
     
     print('Training...')
-    self.train_batch(X, y, num_iteration, epoch_size)
+    self.train_batch(X, y, num_iteration, epoch_size, quantization_error)
     print('Trained.')
     return self
 
@@ -209,7 +216,7 @@ class TheoreticalLvq(object):
       self._competitive_layer_weights[i] = data[rand_idx]
     return self
 
-  def train_batch(self, X, y, num_iteration, epoch_size):
+  def train_batch(self, X, y, num_iteration, epoch_size, quantization_error = False):
     """Looping through input vectors to update weights of neurons.
     
     Parameters
@@ -226,6 +233,9 @@ class TheoreticalLvq(object):
     epoch_size : int
       Size of chunk of data, after each chunk of data, parameter such as learning rate and sigma will be recalculated.
 
+    quantization_error: boolean, default: False
+      Determining to save quantization error or not
+
     Returns
     -------
     self : object
@@ -240,7 +250,11 @@ class TheoreticalLvq(object):
       self.update(x = X[s[idx]], y = y[s[idx]], epoch = self._current_epoch)
       iteration += 1
       if iteration % epoch_size == 0:
+        # Increasing current epoch
         self._current_epoch += 1
+        # Updating quantization error
+        self._epochs_set.append(len(self._epochs_set) + 1)
+        self._qe.append(self.quantization_error(X))
         np.random.shuffle(s)
     return self
 
@@ -739,7 +753,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
                     neighborhood = neighborhood, verbose = verbose)
     self._label_weight = label_weight
 
-  def train_competitive(self, X, num_iteration, epoch_size):
+  def train_competitive(self, X, num_iteration, epoch_size, quantization_error = False):
     """Fitting the weights of the neurons in the competitive layer before labeling class for each neurons.
 
     Parameters
@@ -756,6 +770,9 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     epoch_size : int
       Size of chunk of data, after each chunk of data, parameter such as learning rate and sigma will be recalculated.
 
+    quantization_error: boolean, default: False
+      Determining to save quantization error or not
+
     Returns
     -------
     self : object
@@ -771,7 +788,11 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       self.update(x = X[s[idx]], epoch = self._current_epoch)
       iteration += 1
       if iteration % epoch_size == 0:
+        # Increasing current epoch
         self._current_epoch += 1
+        # Updating quantization error
+        self._epochs_set.append(len(self._epochs_set) + 1)
+        self._qe.append(self.quantization_error(X))
     return self
 
   def label_neurons(self, X, y):
@@ -904,7 +925,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
 
     return self
 
-  def fit(self, X, y, first_num_iteration, first_epoch_size, second_num_iteration, second_epoch_size):
+  def fit(self, X, y, first_num_iteration, first_epoch_size, second_num_iteration, second_epoch_size, quantization_error = False):
     """Training the network using vectors in data sequentially.
 
     Parameters
@@ -926,6 +947,9 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
 
     second_epoch_size : int
       Size of chunk of data for the second phase of training.
+
+    quantization_error: boolean, default: False
+      Determining to save quantization error or not
 
     Returns
     -------
@@ -962,10 +986,10 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       self._linear_layer_weights = zeros((self._n_class, self._n_subclass))
     
     # Phase 1: Training using SOM concept
-    self.train_competitive(X, first_num_iteration, first_epoch_size)
+    self.train_competitive(X, first_num_iteration, first_epoch_size, quantization_error)
     self.label_neurons(X, y)
     # Phase 2: Training using LVQ concept
-    self.train_batch(X, y, second_num_iteration, second_epoch_size)
+    self.train_batch(X, y, second_num_iteration, second_epoch_size, quantization_error)
     self.recompute_neurons_confidence(X, y)
 
     return self
