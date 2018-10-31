@@ -45,6 +45,7 @@ X_test = sc.transform(X_test)
 y_pred, confidence_score = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
 y_pred = encoder.inverse_transform(y_pred)
 y_pred = y_pred.reshape((-1, 1))
+confidence_score = confidence_score.reshape((-1, 1))
 
 for i in range (1, len(models)):
   model_name = models[i]
@@ -63,7 +64,7 @@ for i in range (1, len(models)):
   y_pred_tmp, confidence_score_tmp = lvq.predict(X_test, confidence = 1, crit = 'winner_neuron')
   y_pred_tmp = encoder.inverse_transform(y_pred_tmp)
   y_pred = np.append(y_pred, y_pred_tmp.reshape((-1, 1)), axis = 1)
-  confidence_score = confidence_score + confidence_score_tmp
+  confidence_score = np.append(confidence_score, confidence_score_tmp.reshape((-1, 1)), axis = 1)
 
 # Combining
 print(confidence_score.shape)
@@ -74,9 +75,7 @@ y_pred_combined = np.array([]).astype(np.int8)
 n_samples = len(y)
 for i in range (n_samples):
   j = np.argmax(confidence_score[i])
-  y_pred_combined = np.append(y_pred_combined, j)
-
-y_pred_combined = encoder.inverse_transform(y_pred_combined)
+  y_pred_combined = np.append(y_pred_combined, y_pred[i, j])
 
 # Making confusion matrix
 from sklearn.metrics import confusion_matrix
