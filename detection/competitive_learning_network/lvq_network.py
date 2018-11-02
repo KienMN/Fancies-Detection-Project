@@ -842,7 +842,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     elif self._label_weight == 'inverse_distance':
       neurons_weight = zeros((self._n_subclass, self._n_class))
       m = len(X)
-      k = m // 5
+      k = m // 20
       for i in range (self._n_subclass):
         n = self._competitive_layer_weights[i]
         distances = array([])
