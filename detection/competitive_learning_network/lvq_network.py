@@ -842,7 +842,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     elif self._label_weight == 'inverse_distance':
       neurons_weight = zeros((self._n_subclass, self._n_class))
       m = len(X)
-      k = 10
+      k = m // 5
       for i in range (self._n_subclass):
         n = self._competitive_layer_weights[i]
         distances = array([])
@@ -857,8 +857,30 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
         class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
         self._n_neurons_each_classes[class_name] += 1
+        self._linear_layer_weights[:, i] = 0
         self._linear_layer_weights[class_name][i] = 1
     
+    elif self._label_weight == 'max_voting':
+      neurons_weight = zeros((self._n_subclass, self._n_class))
+      m = len(X)
+      k = m // 5
+      for i in range (self._n_subclass):
+        n = self._competitive_layer_weights[i]
+        distances = array([])
+        for j in range (m):
+          distance = euclidean_distance(n, X[j]) - self._biases[i]
+          distances = append(distances, distance)
+        neighbors = argsort(distances)
+        for j in range (k):
+          neurons_weight[i][y[neighbors[j]]] += 1
+        
+        self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
+        neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
+        class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
+        self._n_neurons_each_classes[class_name] += 1
+        self._linear_layer_weights[:, i] = 0
+        self._linear_layer_weights[class_name][i] = 1
+
     elif self._label_weight == 'uniform':
       class_win = zeros((self._n_subclass, self._n_class))
       m = len(X)
@@ -990,7 +1012,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     self.label_neurons(X, y)
     # Phase 2: Training using LVQ concept
     self.train_batch(X, y, second_num_iteration, second_epoch_size, quantization_error)
-    self.recompute_neurons_confidence(X, y)
+    self.label_neurons(X, y)
 
     return self
 

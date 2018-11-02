@@ -74,7 +74,7 @@ lvq = AdaptiveLVQ(n_rows = size, n_cols = size,
                   sigma = sigma, sigma_decay_rate = 1,
                   # weights_normalization = "length",
                   bias = False, weights_init = 'pca',
-                  neighborhood = neighborhood, label_weight = 'inverse_distance_to_classes')
+                  neighborhood = neighborhood, label_weight = 'max_voting')
 
 # Training phase 1
 lvq.fit(X_train, y_train, first_num_iteration = first_iterations, first_epoch_size = 2000, second_num_iteration = 0, second_epoch_size = 2000, quantization_error = True)
