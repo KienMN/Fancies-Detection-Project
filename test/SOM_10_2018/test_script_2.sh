@@ -16,6 +16,10 @@
 # bsub "python3 model-features.py -tr 2X,3X,4X -te 1X -m 234-1345-gaussian -s 30 -fi 30000 -si 30000 -lr 0.75 -sig 3 -n gaussian -c 1,3,4,5 > result/234_1345_gaussian.txt 2>&1"
 # bsub "python3 model-features.py -tr 2X,3X,4X -te 1X -m 234-2345-gaussian -s 30 -fi 30000 -si 30000 -lr 0.75 -sig 3 -n gaussian -c 2,3,4,5 > result/234_2345_gaussian.txt 2>&1"
 
-bsub "python3 model-features.py -tr 1X,2X,3X -te 4X -m 123-1345-distance-1 -s 30 -fi 30000 -si 30000 -lr 0.75 -sig 3 -n gaussian -c 1,3,4,5 > result/123_1345_distance-1.txt 2>&1"
-bsub "python3 model-features.py -tr 1X,2X,3X -te 4X -m 123-1345-distance-2 -s 30 -fi 10000 -si 30000 -lr 0.75 -sig 3 -n gaussian -c 1,3,4,5 > result/123_1345_distance-2.txt 2>&1"
-bsub "python3 model-features.py -tr 1X,2X,3X -te 4X -m 123-1345-distance-3 -s 30 -fi 30000 -si 10000 -lr 0.75 -sig 3 -n gaussian -c 1,3,4,5 > result/123_1345_distance-3.txt 2>&1"
+bsub "python3 model-features.py -tr 2X,3X,4X -te 1X -m 234-1345-distance-1 -s 30 -fi 30000 -si 30000 -lr 0.75 -sig 3 -n gaussian -c 1,3,4,5 > result/234_1345_distance-1.txt 2>&1"
+bsub "python3 model-features.py -tr 2X,3X,4X -te 1X -m 234-1345-distance-2 -s 30 -fi 10000 -si 30000 -lr 0.75 -sig 3 -n gaussian -c 1,3,4,5 > result/234_1345_distance-2.txt 2>&1"
+bsub "python3 model-features.py -tr 2X,3X,4X -te 1X -m 234-1345-distance-3 -s 30 -fi 30000 -si 10000 -lr 0.75 -sig 3 -n gaussian -c 1,3,4,5 > result/234_1345_distance-3.txt 2>&1"
+
+bsub "python3 model-features.py -tr 2X,3X,4X -te 1X -m 234-all-distance-1 -s 30 -fi 30000 -si 30000 -lr 0.75 -sig 3 -n gaussian -c 1,2,3,4,5 > result/234_all_distance-1.txt 2>&1"
+bsub "python3 model-features.py -tr 2X,3X,4X -te 1X -m 234-all-distance-2 -s 30 -fi 10000 -si 30000 -lr 0.75 -sig 3 -n gaussian -c 1,2,3,4,5 > result/234_all_distance-2.txt 2>&1"
+bsub "python3 model-features.py -tr 2X,3X,4X -te 1X -m 234-all-distance-3 -s 30 -fi 30000 -si 10000 -lr 0.75 -sig 3 -n gaussian -c 1,2,3,4,5 > result/234_all_distance-3.txt 2>&1"
