@@ -50,7 +50,7 @@ class TheoreticalLvq(object):
 
   def __init__(self, n_subclass,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias = True, bias_function = None, weights_normalization = None, weights_init = 'sample',
+              bias = False, bias_function = None, weights_normalization = None, weights_init = 'sample',
               verbose = 1):
 
     # Basic parameters
@@ -490,7 +490,7 @@ class LvqNetworkWithNeighborhood(TheoreticalLvq):
   """
   def __init__(self, n_rows, n_cols,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias = True, bias_function = None, weights_normalization = None, weights_init = 'sample',
+              bias = False, bias_function = None, weights_normalization = None, weights_init = 'sample',
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
               neighborhood = None, verbose = 1):
     super().__init__(n_subclass = n_rows * n_cols,
@@ -741,7 +741,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
   """
   def __init__(self, n_rows, n_cols,
               learning_rate = 0.5, learning_rate_decay_function = None, decay_rate = 1,
-              bias = True, bias_function = None, weights_normalization = None, weights_init = None,
+              bias = False, bias_function = None, weights_normalization = None, weights_init = None,
               sigma = 0, sigma_decay_function = None, sigma_decay_rate = 1,
               neighborhood = None, label_weight = None, verbose = 1):
     super().__init__(n_rows = n_rows, n_cols = n_cols,
