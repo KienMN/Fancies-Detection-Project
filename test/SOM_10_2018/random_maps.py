@@ -57,12 +57,19 @@ encoder = LabelEncoder()
 y_train = encoder.fit_transform(y_train)
 
 # Training the LVQ
+n_estimators = int(args.num_estimators)
+size = args.size
+first_iterations = args.first_iterations
+second_iterations = args.second_iterations
+learning_rate = args.learning_rate
+sigma = args.sigma
+
 from detection.competitive_learning_network.combination import RandomMaps
-classifier = RandomMaps(n_estimators = args.num_estimators, size = args.size,
-                        learning_rate = args.learning_rate , decay_rate = 1,
-                        sigma = args.sigma, sigma_decay_rate = 1,
+classifier = RandomMaps(n_estimators = n_estimators, size = size,
+                        learning_rate = learning_rate , decay_rate = 1,
+                        sigma = sigma, sigma_decay_rate = 1,
                         label_weight = 'inverse_distance')
-classifier.fit(X_train, y_train, max_first_iters = args.first_iterations, first_epoch_size = 4000, max_second_iters = args.second_iterations, second_epoch_size = 4000)
+classifier.fit(X_train, y_train, max_first_iters = first_iterations, first_epoch_size = 4000, max_second_iters = second_iterations, second_epoch_size = 4000)
 
 # Predict the result
 y_pred = classifier.predict(X_test, crit = 'max_voting')
