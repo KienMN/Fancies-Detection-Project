@@ -1,4 +1,4 @@
-# LVQ with Neighborhood Model
+# Model features
 
 # Inputing arguments
 from argparse import ArgumentParser

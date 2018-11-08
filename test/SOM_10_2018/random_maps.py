@@ -8,21 +8,41 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Inputing arguments
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument('-tr', '--train_dataset')
+parser.add_argument('-te', '--test_dataset')
+parser.add_argument('-m', '--model_name')
+parser.add_argument('-n', '--num_estimators')
+parser.add_argument('-s', '--size', type = int)
+parser.add_argument('-fi', '--first_iterations', type = int)
+parser.add_argument('-si', '--second_iterations', type = int)
+parser.add_argument('-lr', '--learning_rate', type = float)
+parser.add_argument('-sig', '--sigma', type = float)
+parser.add_argument('-c', '--used_cols')
+args = parser.parse_args()
+
 # Importing the Training dataset
-filepath1 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-1X.csv')
-filepath2 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-2X.csv')
-filepath3 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-3X.csv')
+train_dataset_name = [a for a in args.train_dataset.split(',')]
+used_cols = [int(i) for i in args.used_cols.split(',')]
+
+filepath1 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-' + train_dataset_name[0] + '.csv')
+filepath2 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-' + train_dataset_name[1] + '.csv')
+filepath3 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-' + train_dataset_name[2] + '.csv')
 dataset = pd.read_csv(filepath1)
 dataset = dataset.append(pd.read_csv(filepath2), ignore_index = True)
 dataset = dataset.append(pd.read_csv(filepath3), ignore_index = True)
 
-X_train = dataset.iloc[:, 1: -1].values
+X_train = dataset.iloc[:, used_cols].values
 y_train = dataset.iloc[:, -1].values.astype(np.int8)
 
 # Importing the Test dataset
-filepath = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-4X.csv')
+test_dataset_name = args.test_dataset
+
+filepath = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-' + test_dataset_name +'.csv')
 test_dataset = pd.read_csv(filepath)
-X_test = test_dataset.iloc[:, 1: -1].values
+X_test = test_dataset.iloc[:, used_cols].values
 y_test = test_dataset.iloc[:, -1].values.astype(np.int8)
 
 # Feature scaling
@@ -38,11 +58,11 @@ y_train = encoder.fit_transform(y_train)
 
 # Training the LVQ
 from detection.competitive_learning_network.combination import RandomMaps
-classifier = RandomMaps(n_estimators = 50, size = 5,
-                        learning_rate = 0.75, decay_rate = 1,
-                        sigma = 3, sigma_decay_rate = 1,
+classifier = RandomMaps(n_estimators = args.num_estimators, size = args.size,
+                        learning_rate = args.learning_rate , decay_rate = 1,
+                        sigma = args.sigma, sigma_decay_rate = 1,
                         label_weight = 'inverse_distance')
-classifier.fit(X_train, y_train, max_first_iters = 20000, first_epoch_size = 4000, max_second_iters = 20000, second_epoch_size = 4000)
+classifier.fit(X_train, y_train, max_first_iters = args.first_iterations, first_epoch_size = 4000, max_second_iters = args.second_iterations, second_epoch_size = 4000)
 
 # Predict the result
 y_pred = classifier.predict(X_test, crit = 'max_voting')
