@@ -40,7 +40,7 @@ classifier = RandomMaps(n_estimators = 10, size = 5,
 classifier.fit(X_train, y_train, max_first_iters = 4000, first_epoch_size = 400, max_second_iters = 4000, second_epoch_size = 400)
 
 # Predict the result
-y_pred = classifier.predict(X_test, crit='confidence_score')
+y_pred = classifier.predict(X_test, crit='distance')
 y_pred = encoder.inverse_transform(y_pred)
 
 # Making confusion matrix

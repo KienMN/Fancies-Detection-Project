@@ -389,22 +389,32 @@ class TheoreticalLvq(object):
     else:
       return y_pred
 
-  def distance_from_winner(self, x):
-    """Computing the distance between the sample and its winner neuron.
+  def distance_from_winner_neurons(self, X, prediction = False):
+    """Computing the distance between samples and their winner neuron.
 
     Parameters
     ----------
-    x : 1D numpy array, shape (n_features,)
-      Input vector where n_features is the number of features.
+    X : 2D numpy array, shape (n_samples, n_features)
+      Data vectors, where n_samples is the number of samples and n_features is the number of features.
 
     Returns
     -------
-    distance : float
-      Distance between the sample and its winner neuron.
+    distances : 1D numpy array, shape (n_samples,)
+      Distance between the samples and their winner neuron.
     """
-    win = self.winner(x)
-    win_idx = argmax(win)
-    return euclidean_distance(x, self._competitive_layer_weights[win_idx])
+    n_sample = len(X)
+    y_pred = array([]).astype(np.int8)
+    distances = np.array([])
+    for i in range (n_sample):
+      x = X[i]
+      win = self.winner(x)
+      win_idx = argmax(win)
+      y_i = int(self.classify(win))
+      y_pred = append(y_pred, y_i)
+      distances = np.append(distances, euclidean_distance(x, self._competitive_layer_weights[win_idx]))
+    if prediction:
+      return y_pred, distances
+    return distances
 
   def quantization_error(self, X):
     """Determining quantization error of the network.
@@ -1091,7 +1101,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
   #   else:
   #     return y_pred
 
-  def predict(self, X, confidence = False, crit = 'distance'):
+  def predict(self, X, confidence = False, distance = False, crit = 'distance'):
     """Predicting the class according to input vectors.
 
     Parameters
@@ -1132,6 +1142,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     
         # Computing confidence score
         # confidence_score[i] = self._neurons_confidence[win_idx].copy()
+
         confidence_score = np.append(confidence_score, self._neurons_confidence[win_idx, y_i])
       return y_pred, confidence_score
 
