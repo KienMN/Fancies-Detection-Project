@@ -39,7 +39,7 @@ class RandomMaps(object):
     n_models = len(self._models)
     y_pred = None
     y_pred_final = np.array([]).astype(np.int8)
-    if crit == 'max_voting ' or crit == 'confidence_score':
+    if crit == 'max_voting' or crit == 'confidence_score':
       confidence_score = None
       for model in self._models:
         if y_pred is None:
@@ -59,7 +59,6 @@ class RandomMaps(object):
         for i in range (n_samples):
           y_i = y_pred[i, np.argmax(confidence_score[i])]
           y_pred_final = np.append(y_pred_final, y_i)
-    
     elif crit == 'distance':
       distances = None
       for model in self._models:
@@ -73,10 +72,11 @@ class RandomMaps(object):
           distances_tmp = distances_tmp.reshape((-1, 1))
           y_pred = np.append(y_pred, y_pred_tmp, axis = 1)
           distances = np.append(distances, distances_tmp, axis = 1)
+      
       weights = np.zeros((n_samples, n_classes))
       for i in range (n_samples):
         for j in range (n_models):
           weights[i, y_pred[i, j]] += (1 / distances[i, j])
-        y_i = y_pred[i, np.argmax(weights[i])]
+        y_i = np.argmax(weights[i])
         y_pred_final = np.append(y_pred_final, y_i)
     return y_pred_final

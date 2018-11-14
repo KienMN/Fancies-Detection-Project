@@ -33,14 +33,14 @@ y_train = encoder.fit_transform(y_train)
 
 # Training the LVQ
 from detection.competitive_learning_network.combination import RandomMaps
-classifier = RandomMaps(n_estimators = 10, size = 5,
+classifier = RandomMaps(n_estimators = 2, size = 5,
                         learning_rate = 0.5, decay_rate = 1,
                         sigma = 2, sigma_decay_rate = 1,
                         label_weight = 'inverse_distance')
 classifier.fit(X_train, y_train, max_first_iters = 4000, first_epoch_size = 400, max_second_iters = 4000, second_epoch_size = 400)
 
 # Predict the result
-y_pred = classifier.predict(X_test, crit='distance')
+y_pred = classifier.predict(X_test, crit='max_voting')
 y_pred = encoder.inverse_transform(y_pred)
 
 # Making confusion matrix
