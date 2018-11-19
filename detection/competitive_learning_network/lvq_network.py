@@ -864,7 +864,9 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
           neurons_weight[i][y[neighbors[j]]] += 1 / distances[neighbors[j]]
         
         self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
+        # print(self._neurons_confidence[i])
         neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
+        # print(neuron_class_win)
         class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
         self._n_neurons_each_classes[class_name] += 1
         self._linear_layer_weights[:, i] = 0
