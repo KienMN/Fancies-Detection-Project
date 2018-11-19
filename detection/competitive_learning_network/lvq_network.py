@@ -1008,8 +1008,8 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         self.pca_weights_init(X)
       
       # Normalizing competitive layer weights
-      for i in range (self._n_subclass):
-        if self._weights_normalization == "length":
+      if self._weights_normalization == "length":
+        for i in range (self._n_subclass):
           norm = fast_norm(self._competitive_layer_weights[i])
           self._competitive_layer_weights[i] = self._competitive_layer_weights[i] / norm
 

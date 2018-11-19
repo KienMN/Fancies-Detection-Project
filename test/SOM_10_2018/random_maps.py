@@ -21,11 +21,15 @@ parser.add_argument('-si', '--second_iterations', type = int)
 parser.add_argument('-lr', '--learning_rate', type = float)
 parser.add_argument('-sig', '--sigma', type = float)
 parser.add_argument('-c', '--used_cols')
+parser.add_argument('-fa', '--features_array')
+parser.add_argument('-mm', '--max_maps_each_features', type = int)
 args = parser.parse_args()
 
 # Importing the Training dataset
 train_dataset_name = [a for a in args.train_dataset.split(',')]
 used_cols = [int(i) for i in args.used_cols.split(',')]
+features_array = [[int(x) for x in arr.split(',')] 
+                  for arr in args.features_array.split('-')]
 
 filepath1 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-' + train_dataset_name[0] + '.csv')
 filepath2 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-' + train_dataset_name[1] + '.csv')
@@ -63,13 +67,16 @@ first_iterations = args.first_iterations
 second_iterations = args.second_iterations
 learning_rate = args.learning_rate
 sigma = args.sigma
+max_maps_each_features = args.max_maps_each_features
 
 from detection.competitive_learning_network.combination import RandomMaps
 classifier = RandomMaps(n_estimators = n_estimators, size = size,
                         learning_rate = learning_rate , decay_rate = 1,
                         sigma = sigma, sigma_decay_rate = 1,
                         label_weight = 'inverse_distance')
-classifier.fit(X_train, y_train, max_first_iters = first_iterations, first_epoch_size = 4000, max_second_iters = second_iterations, second_epoch_size = 4000)
+classifier.fit(X_train, y_train, max_first_iters = first_iterations, first_epoch_size = 4000,
+              max_second_iters = second_iterations, second_epoch_size = 4000,
+              features_arr = features_array, max_maps_each_features = max_maps_each_features)
 
 # Predict the result
 y_pred = classifier.predict(X_test, crit = 'max_voting')
