@@ -832,7 +832,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     if self._label_weight == 'exponential_distance':
       neurons_weight = zeros((self._n_subclass, self._n_class))
       m = len(X)
-      k = 10
+      k = m // 20
       for i in range (self._n_subclass):
         n = self._competitive_layer_weights[i]
         distances = array([])
