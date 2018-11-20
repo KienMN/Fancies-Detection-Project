@@ -34,7 +34,7 @@ class RandomMaps(object):
         else:
           neighborhood = 'bubble'
         X_train = X[:, features]
-        lvq = AdaptiveLVQ(n_rows = self._size, n_cols = self._size, learning_rate = self._learning_rate,
+        lvq = AdaptiveLVQ(n_rows = self._size, n_cols = self._size, bias = False, learning_rate = self._learning_rate,
                           decay_rate = self._decay_rate, sigma = self._sigma, sigma_decay_rate = self._sigma_decay_rate,
                           neighborhood = neighborhood, label_weight = self._label_weight, weights_init = "sample", verbose = 0)
         lvq.fit(X_train, y, first_num_iteration = max_first_iters, first_epoch_size = first_epoch_size,
