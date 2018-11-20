@@ -213,7 +213,7 @@ class TheoreticalLvq(object):
     for i in range (self._n_subclass):
       # Initializing the weights, picking random sample from data
       rand_idx = random.random_integers(0, len(data) - 1)
-      self._competitive_layer_weights[i] = data[rand_idx]
+      self._competitive_layer_weights[i] = data[rand_idx].copy()
     return self
 
   def train_batch(self, X, y, num_iteration, epoch_size, quantization_error = False):
@@ -835,20 +835,20 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       k = 20
       for i in range (self._n_subclass):
         n = self._competitive_layer_weights[i]
-        print(n)
+        # print(n)
         distances = array([])
         for j in range (m):
           distance = euclidean_distance(n, X[j]) - self._biases[i]
           distances = append(distances, distance)
         neighbors = argsort(distances)
         # Distances are sometime too small
-        print(distances[neighbors[: k]])
+        # print(distances[neighbors[: k]])
         
         for j in range (k):
           neurons_weight[i][y[neighbors[j]]] += exp(-(distances[neighbors[j]] ** 2))
         
         # print(y[neighbors[: k]])
-        print(neurons_weight[i])
+        # print(neurons_weight[i])
         self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
         neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
         class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
