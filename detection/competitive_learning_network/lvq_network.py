@@ -835,7 +835,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       k = 20
       for i in range (self._n_subclass):
         n = self._competitive_layer_weights[i]
-        # print(n)
+        print(n)
         distances = array([])
         for j in range (m):
           distance = euclidean_distance(n, X[j]) - self._biases[i]
