@@ -841,13 +841,13 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
           distances = append(distances, distance)
         neighbors = argsort(distances)
         # Distances are sometime too small
-        # print(distances[neighbors[: k]])
+        print(distances[neighbors[: k]])
         
         for j in range (k):
           neurons_weight[i][y[neighbors[j]]] += exp(-(distances[neighbors[j]] ** 2))
         
         # print(y[neighbors[: k]])
-        # print(neurons_weight[i])
+        print(neurons_weight[i])
         self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
         neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
         class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
