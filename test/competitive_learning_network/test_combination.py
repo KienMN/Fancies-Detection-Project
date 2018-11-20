@@ -33,10 +33,10 @@ y_train = encoder.fit_transform(y_train)
 
 # Training the LVQ
 from detection.competitive_learning_network.combination import RandomMaps
-classifier = RandomMaps(n_estimators = 2, size = 5,
+classifier = RandomMaps(n_estimators = 1, size = 5,
                         learning_rate = 0.5, decay_rate = 1,
                         sigma = 2, sigma_decay_rate = 1,
-                        label_weight = 'exponential_distance')
+                        label_weight = 'inverse_distance')
 classifier.fit(X_train, y_train, max_first_iters = 100, first_epoch_size = 400, max_second_iters = 4000, second_epoch_size = 400,
               features_arr = [[0, 1, 2], [1, 2, 3], [2, 3, 4], [3, 4, 5]], max_maps_each_features = 1)
 
