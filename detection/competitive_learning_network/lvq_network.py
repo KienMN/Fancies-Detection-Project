@@ -840,8 +840,11 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
           distance = euclidean_distance(n, X[j]) - self._biases[i]
           distances = append(distances, distance)
         neighbors = argsort(distances)
+        print(distances[neighbors[: k]])
+        
         for j in range (k):
           neurons_weight[i][y[neighbors[j]]] += exp(-(distances[neighbors[j]] ** 2))
+        
         print(y[neighbors[: k]])
         print(neurons_weight[i])
         self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
