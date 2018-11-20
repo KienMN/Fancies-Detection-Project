@@ -16,6 +16,7 @@ class RandomMaps(object):
     self._features_each_models = []
 
   def fit(self, X, y, max_first_iters, first_epoch_size, max_second_iters, second_epoch_size, features_arr = None, max_maps_each_features = None):
+    
     if features_arr is None:
       features_arr = [[]]
       for i in range (X.shape[1]):
@@ -34,6 +35,7 @@ class RandomMaps(object):
         else:
           neighborhood = 'bubble'
         X_train = X[:, features]
+        print(X_train.tolist())
         lvq = AdaptiveLVQ(n_rows = self._size, n_cols = self._size, bias = False, learning_rate = self._learning_rate,
                           decay_rate = self._decay_rate, sigma = self._sigma, sigma_decay_rate = self._sigma_decay_rate,
                           neighborhood = neighborhood, label_weight = self._label_weight, weights_init = "sample", verbose = 0)
