@@ -27,7 +27,6 @@ class RandomMaps(object):
     self._n_estimators = max_maps_each_features * len(features_arr)
     
     for i in range (max_maps_each_features):
-      print(i)
       for features in features_arr:
         neighborhood = None
         if (random.randint(0, 1)):

@@ -75,7 +75,7 @@ classifier = RandomMaps(n_estimators = n_estimators, size = size,
                         sigma = sigma, sigma_decay_rate = 1,
                         label_weight = 'exponential_distance')
 classifier.fit(X_train, y_train, max_first_iters = first_iterations, first_epoch_size = 4000,
-              max_second_iters = second_iterations, second_epoch_size = 4000,
+              max_second_iters = second_iterations, second_epoch_size = 3000,
               features_arr = features_array, max_maps_each_features = max_maps_each_features)
 
 # Predict the result

@@ -832,7 +832,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
     if self._label_weight == 'exponential_distance':
       neurons_weight = zeros((self._n_subclass, self._n_class))
       m = len(X)
-      k = m // 20
+      k = 20
       for i in range (self._n_subclass):
         n = self._competitive_layer_weights[i]
         distances = array([])
@@ -840,13 +840,14 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
           distance = euclidean_distance(n, X[j]) - self._biases[i]
           distances = append(distances, distance)
         neighbors = argsort(distances)
-        print(distances[neighbors[: k]])
+        # Distances are sometime too small
+        # print(distances[neighbors[: k]])
         
         for j in range (k):
           neurons_weight[i][y[neighbors[j]]] += exp(-(distances[neighbors[j]] ** 2))
         
-        print(y[neighbors[: k]])
-        print(neurons_weight[i])
+        # print(y[neighbors[: k]])
+        # print(neurons_weight[i])
         self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
         neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
         class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
