@@ -28,14 +28,16 @@ class RandomMaps(object):
     self._n_estimators = max_maps_each_features * len(features_arr)
     
     for i in range (max_maps_each_features):
+      print(i)
       for features in features_arr:
+        print(features)
         neighborhood = None
         if (random.randint(0, 1)):
           neighborhood = 'gaussian'
         else:
           neighborhood = 'bubble'
         X_train = X[:, features]
-        print(X_train.tolist())
+        
         lvq = AdaptiveLVQ(n_rows = self._size, n_cols = self._size, bias = False, learning_rate = self._learning_rate,
                           decay_rate = self._decay_rate, sigma = self._sigma, sigma_decay_rate = self._sigma_decay_rate,
                           neighborhood = neighborhood, label_weight = self._label_weight, weights_init = "sample", verbose = 0)

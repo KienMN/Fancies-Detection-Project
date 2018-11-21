@@ -290,6 +290,10 @@ class TheoreticalLvq(object):
     else:
       self._competitive_layer_weights[win_idx] = self._competitive_layer_weights[win_idx] - beta * (x - self._competitive_layer_weights[win_idx])
     
+    # Limiting value range
+    self._competitive_layer_weights[win_idx, self._competitive_layer_weights[win_idx] > 1] = 1
+    self._competitive_layer_weights[win_idx, self._competitive_layer_weights[win_idx] < -1] = -1
+
     # Normalizing the weights
     if self._weights_normalization == "length":
       norm = fast_norm(self._competitive_layer_weights[win_idx])
@@ -577,6 +581,10 @@ class LvqNetworkWithNeighborhood(TheoreticalLvq):
       # else:
       #   self._competitive_layer_weights[i] = limit_range(self._competitive_layer_weights[i], feature_range = feature_range)
       
+      # Limiting value range of neurons' weights
+      self._competitive_layer_weights[i, self._competitive_layer_weights[i] > 1] = 1
+      self._competitive_layer_weights[i, self._competitive_layer_weights[i] < -1] = -1
+
       # Normalizing the weights
       if self._weights_normalization == "length":
         norm = fast_norm(self._competitive_layer_weights[i])
@@ -835,13 +843,13 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
       k = 20
       for i in range (self._n_subclass):
         n = self._competitive_layer_weights[i]
-        print(n)
+        
         distances = array([])
         for j in range (m):
           distance = euclidean_distance(n, X[j]) - self._biases[i]
           distances = append(distances, distance)
         neighbors = argsort(distances)
-        # Distances are sometime too small
+        # Distances are sometime too large
         # print(distances[neighbors[: k]])
         
         for j in range (k):
@@ -852,6 +860,7 @@ class AdaptiveLVQ(LvqNetworkWithNeighborhood):
         self._neurons_confidence[i] = neurons_weight[i] / sum(neurons_weight[i])
         neuron_class_win = argwhere(self._neurons_confidence[i] == amax(self._neurons_confidence[i])).ravel()
         class_name = neuron_class_win[argmin(self._n_neurons_each_classes[neuron_class_win])]
+        print(i, n, class_name)
         self._n_neurons_each_classes[class_name] += 1
         self._linear_layer_weights[class_name][i] = 1
     
