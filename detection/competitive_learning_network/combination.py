@@ -28,9 +28,7 @@ class RandomMaps(object):
     self._n_estimators = max_maps_each_features * len(features_arr)
     
     for i in range (max_maps_each_features):
-      print(i)
       for features in features_arr:
-        print(features)
         neighborhood = None
         if (random.randint(0, 1)):
           neighborhood = 'gaussian'
@@ -45,6 +43,7 @@ class RandomMaps(object):
                 second_num_iteration = max_second_iters, second_epoch_size = second_epoch_size)
         self._features_each_models.append(features)
         self._models.append(lvq)
+        print('Border neurons:', lvq.count_border_neurons())
     
   def predict(self, X, crit = 'max_voting'):
     '''

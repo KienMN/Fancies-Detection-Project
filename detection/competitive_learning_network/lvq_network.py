@@ -454,6 +454,13 @@ class TheoreticalLvq(object):
     print("Winner neurons count")
     print(self._winner_count)
 
+  def count_border_neurons(self):
+    border_neurons = 0
+    for i in range (self._n_subclass):
+      if any((self._competitive_layer_weights[i] == 1) | (self._competitive_layer_weights[i] == -1)):
+        border_neurons += 1
+    return border_neurons
+
 class LvqNetworkWithNeighborhood(TheoreticalLvq):
   """Learning Vector Quantization with Neighborhood concept.
 
