@@ -36,12 +36,12 @@ neighborhood = args.neighborhood
 # Importing the dataset
 filepath = os.path.join(os.path.dirname(__file__), 'data/train_dataset.csv')
 dataset = pd.read_csv(filepath)
-X_train = dataset.iloc[:, : -1].values
+X_train = dataset.iloc[:, 1: -1].values
 y_train = dataset.iloc[:, -1].values.astype(np.int8)
 
 filepath = os.path.join(os.path.dirname(__file__), 'data/test_dataset.csv')
 dataset = pd.read_csv(filepath)
-X_test = dataset.iloc[:, : -1].values
+X_test = dataset.iloc[:, 1: -1].values
 y_test = dataset.iloc[:, -1].values.astype(np.int8)
 
 # Feature scaling
