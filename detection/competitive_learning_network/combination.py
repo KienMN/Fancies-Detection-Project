@@ -18,17 +18,21 @@ class RandomMaps(object):
   def fit(self, X, y, max_first_iters, first_epoch_size, max_second_iters, second_epoch_size, features_arr = None, max_maps_each_features = None):
     
     if features_arr is None:
-      features_arr = [[]]
-      for i in range (X.shape[1]):
-        features_arr[0].append(i)
-    if max_maps_each_features is None:
-      max_maps_each_features = self._n_estimators // len(features_arr)
-    
-    # Trick to handle later
-    self._n_estimators = max_maps_each_features * len(features_arr)
-    
-    for i in range (max_maps_each_features):
-      for features in features_arr:
+      # features_arr = [[]]
+      # for i in range (X.shape[1]):
+      #   features_arr[0].append(i)
+
+      for i in range (self._n_estimators):
+        features = []
+        for j in range (X.shape[1]):
+          if random.randint(0, 1):
+            features.append(j)
+        
+        if len(features) == 0:
+          for j in range (X.shape[1]):
+            features.append(j)
+        print(features)
+              
         neighborhood = None
         if (random.randint(0, 1)):
           neighborhood = 'gaussian'
@@ -43,7 +47,31 @@ class RandomMaps(object):
                 second_num_iteration = max_second_iters, second_epoch_size = second_epoch_size)
         self._features_each_models.append(features)
         self._models.append(lvq)
-        print('Border neurons:', lvq.count_border_neurons())
+
+    else:
+      if max_maps_each_features is None:
+        max_maps_each_features = self._n_estimators // len(features_arr)
+      
+      # Trick to handle later
+      self._n_estimators = max_maps_each_features * len(features_arr)
+      
+      for i in range (max_maps_each_features):
+        for features in features_arr:
+          neighborhood = None
+          if (random.randint(0, 1)):
+            neighborhood = 'gaussian'
+          else:
+            neighborhood = 'bubble'
+          X_train = X[:, features]
+          
+          lvq = AdaptiveLVQ(n_rows = self._size, n_cols = self._size, bias = False, learning_rate = self._learning_rate,
+                            decay_rate = self._decay_rate, sigma = self._sigma, sigma_decay_rate = self._sigma_decay_rate,
+                            neighborhood = neighborhood, label_weight = self._label_weight, weights_init = "sample", verbose = 0)
+          lvq.fit(X_train, y, first_num_iteration = max_first_iters, first_epoch_size = first_epoch_size,
+                  second_num_iteration = max_second_iters, second_epoch_size = second_epoch_size)
+          self._features_each_models.append(features)
+          self._models.append(lvq)
+          # print('Border neurons:', lvq.count_border_neurons())
     
   def predict(self, X, crit = 'max_voting'):
     '''
