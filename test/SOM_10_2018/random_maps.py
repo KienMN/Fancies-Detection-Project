@@ -28,8 +28,11 @@ args = parser.parse_args()
 # Importing the Training dataset
 train_dataset_name = [a for a in args.train_dataset.split(',')]
 used_cols = [int(i) for i in args.used_cols.split(',')]
-features_array = [[int(x) for x in arr.split(',')] 
-                  for arr in args.features_array.split('-')]
+features_array = None
+if args.features_array is not None:
+  features_array = [[int(x) for x in arr.split(',')] 
+                    for arr in args.features_array.split('-')]
+
 
 filepath1 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-' + train_dataset_name[0] + '.csv')
 filepath2 = os.path.join(os.path.dirname(__file__), 'data/filtered_RUBY-' + train_dataset_name[1] + '.csv')
@@ -74,7 +77,7 @@ classifier = RandomMaps(n_estimators = n_estimators, size = size,
                         learning_rate = learning_rate , decay_rate = 1,
                         sigma = sigma, sigma_decay_rate = 1,
                         label_weight = 'exponential_distance')
-classifier.fit(X_train, y_train, max_first_iters = first_iterations, first_epoch_size = 4000,
+classifier.fit(X_train, y_train, max_first_iters = first_iterations, first_epoch_size = 3000,
               max_second_iters = second_iterations, second_epoch_size = 3000,
               features_arr = features_array, max_maps_each_features = max_maps_each_features)
 
