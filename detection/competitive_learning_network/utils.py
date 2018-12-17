@@ -2,6 +2,7 @@ from math import sqrt
 from numpy import dot, argmax, zeros
 import numpy as np
 from random import sample
+import random
 
 def fast_norm(x):
   """
@@ -70,3 +71,15 @@ def limit_range(x, feature_range = (0, 1)):
   x[np.where(x > feature_range[1])] = feature_range[1]
   x[np.where(x < feature_range[0])] = feature_range[0]
   return x
+
+def weighted_sampling(weights, sample_size):
+  """
+  Returns a weighted sample with replacement.
+  """
+  totals = np.cumsum(weights)
+  sample = []
+  for i in range(sample_size):
+    rnd = random.random() * totals[-1]
+    idx = np.searchsorted(totals, rnd, 'right')
+    sample.append(idx)
+  return sample
