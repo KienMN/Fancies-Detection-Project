@@ -1,6 +1,7 @@
 from .lvq_network import AdaptiveLVQ
 import random
 import numpy as np
+from .utils import weighted_sampling
 
 class RandomMaps(object):
   def __init__(self, n_estimators, size,
@@ -21,18 +22,11 @@ class RandomMaps(object):
       # features_arr = [[]]
       # for i in range (X.shape[1]):
       #   features_arr[0].append(i)
-
+      corr_coef = np.corrcoef(np.append(X, y.reshape((-1, 1)), axis = 1).T)[-1, :-1]
+      number_of_features = X.shape[1]
+      weights = corr_coef.copy()
       for i in range (self._n_estimators):
-        features = []
-        for j in range (X.shape[1]):
-          if random.randint(0, 1):
-            features.append(j)
-        
-        if len(features) == 0:
-          for j in range (X.shape[1]):
-            features.append(j)
-        print(features)
-              
+        features = np.unique(weighted_sampling(weights, number_of_features))
         neighborhood = None
         if (random.randint(0, 1)):
           neighborhood = 'gaussian'
