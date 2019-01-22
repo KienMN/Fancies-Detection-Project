@@ -1,0 +1,6 @@
+data/
+__pycache__/
+node_modules/
+dump_model/
+images/
+models/
