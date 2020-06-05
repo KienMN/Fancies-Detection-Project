@@ -38,7 +38,7 @@ dask==0.16.1
 datashape==0.5.4
 decorator==4.2.1
 distributed==1.20.2
-Django==2.0.4
+Django==2.2.13
 django-filter==1.1.0
 django-material==1.2.2
 django-viewflow==1.2.2
